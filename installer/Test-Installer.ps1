@@ -1,45 +1,72 @@
 ﻿param(
-    [Parameter(Mandatory = $true)][string]$InstallerPath,
-    [Parameter(Mandatory = $true)][string]$InstallDir
+    [Alias('InstallerPath')][string]$SetupPath,
+    [Alias('InstallDir')][string]$Target
 )
 $ErrorActionPreference = 'Stop'
-$setup = (Resolve-Path -LiteralPath $InstallerPath).Path
-$target = [IO.Path]::GetFullPath($InstallDir)
+$ProgressPreference = 'SilentlyContinue'
+$targetPath = [IO.Path]::GetFullPath($Target)
 $desktopLink = Join-Path ([Environment]::GetFolderPath('DesktopDirectory')) 'Amos電腦手機連結器.lnk'
-$programFolder = Join-Path ([Environment]::GetFolderPath('Programs')) 'Amos電腦手機連結器'
-$menuLink = Join-Path $programFolder 'Amos電腦手機連結器.lnk'
-$uninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\{9ABF5441-8F5B-4352-80DC-F3B87625F2E9}_is1'
-foreach ($path in @($target, $desktopLink, $programFolder, $uninstallKey)) {
-    if (Test-Path -LiteralPath $path) { throw "Installer test requires an unused location: $path" }
+$menuLink = Join-Path ([Environment]::GetFolderPath('Programs')) 'Amos電腦手機連結器\Amos電腦手機連結器.lnk'
+$key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\{9ABF5441-8F5B-4352-80DC-F3B87625F2E9}_is1'
+foreach ($path in @($targetPath,$desktopLink,$key)) {
+    if (Test-Path -LiteralPath $path) { throw "Requires clean Windows test machine: $path" }
 }
-$uninstaller = Join-Path $target 'unins000.exe'
+function Read-TestShortcut([string]$Path) {
+    $aliasPath = Join-Path $env:RUNNER_TEMP 'Amos-shortcut-inspection.lnk'
+    Copy-Item -LiteralPath $Path -Destination $aliasPath -Force
+    try { return (New-Object -ComObject WScript.Shell).CreateShortcut($aliasPath) }
+    finally { Remove-Item -LiteralPath $aliasPath -Force }
+}
+function Install-TestSetup([string]$Path) {
+    $process = Start-Process -FilePath $Path -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-','/MERGETASKS=desktopicon',('/DIR="'+$targetPath+'"')) -Wait -PassThru -WindowStyle Hidden
+    if ($process.ExitCode -ne 0) { throw "Installer failed: $($process.ExitCode)" }
+}
+$oldSetup = Join-Path $env:RUNNER_TEMP 'Amos-previous-setup.exe'
+$previousAvailable = $true
 try {
-    $process = Start-Process -FilePath $setup -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', ('/DIR="' + $target + '"')) -Wait -PassThru -WindowStyle Hidden
-    if ($process.ExitCode -ne 0) { throw "Installer exit code: $($process.ExitCode)" }
-    $exe = Join-Path $target 'AureoLink.exe'
-    foreach ($path in @($exe, $desktopLink, $menuLink, $uninstaller, $uninstallKey)) {
-        if (-not (Test-Path -LiteralPath $path)) { throw "Installed item missing: $path" }
-    }
-    $shell = New-Object -ComObject WScript.Shell
-    foreach ($path in @($desktopLink, $menuLink)) {
-        $inspectionLink = Join-Path $env:RUNNER_TEMP 'Amos-shortcut-inspection.lnk'
-        Copy-Item -LiteralPath $path -Destination $inspectionLink -Force
-        try { $shortcut = $shell.CreateShortcut($inspectionLink) }
-        finally { Remove-Item -LiteralPath $inspectionLink -Force }
-        if ($shortcut.TargetPath -ne $exe) { throw "Shortcut points to the wrong executable: $path; actual='$($shortcut.TargetPath)'; expected='$exe'" }
-        if ($shortcut.WorkingDirectory -ne $target) { throw "Shortcut working directory is incorrect: $path" }
-    }
-    $registration = Get-ItemProperty -LiteralPath $uninstallKey
-    if ($registration.DisplayVersion -ne '2.0.1') { throw 'Installed version is incorrect' }
-    Write-Output 'PASS: install, default desktop shortcut, Start menu shortcut, and uninstall registration'
+    Invoke-WebRequest -Uri 'https://github.com/stu310101-arch/aureo-link/releases/download/v2.0.1/AmosLink-Setup.exe' -OutFile $oldSetup
+    if ((Get-FileHash -LiteralPath $oldSetup -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'b147ff4e0b7de878eee72a9ad3017fca2a8f2aff3f9836f353a0e90c899fff90') { throw 'Previous installer checksum mismatch' }
+} catch {
+    if ($_.Exception.Response.StatusCode.value__ -eq 404) {
+        $previousAvailable = $false
+        Write-Output 'Historical download removed; checking clean installation.'
+    } else { throw }
 }
-finally {
+$uninstaller = Join-Path $targetPath 'unins000.exe'
+$icon = Join-Path $targetPath 'icons\AmosLink-v2.0.2.ico'
+try {
+    $oldIcon = $null
+    if ($previousAvailable) {
+        Install-TestSetup $oldSetup
+        $oldIcon = (Read-TestShortcut $desktopLink).IconLocation
+        if ([string]::IsNullOrEmpty($oldIcon)) { throw 'Previous shortcut icon could not be inspected' }
+    }
+    Install-TestSetup (Resolve-Path -LiteralPath $SetupPath).Path
+    $exe = Join-Path $targetPath 'AureoLink.exe'
+    foreach ($path in @($exe,$desktopLink,$menuLink,$key,$uninstaller,$icon)) {
+        if (-not (Test-Path -LiteralPath $path)) { throw "Missing upgraded item: $path" }
+    }
+    if ((Get-FileHash -LiteralPath $icon -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'd7ffb9b8ab1cc20b244895d4eced193c364f0d58a0bc9192a4034c89f931d00c') { throw 'Installed ICO differs from approved artwork' }
+    foreach ($path in @($desktopLink,$menuLink)) {
+        $shortcut = Read-TestShortcut $path
+        if ($shortcut.TargetPath -ne $exe) { throw 'Shortcut target differs from installed executable' }
+        $iconPath = ($shortcut.IconLocation -replace ',\s*0$','').Trim('"')
+        if ($iconPath -ne $icon) { throw "Shortcut icon mismatch: actual='$iconPath'; expected='$icon'" }
+        if ($oldIcon -and $shortcut.IconLocation -eq $oldIcon) { throw 'Upgrade reused old icon cache key' }
+    }
+    $registration = Get-ItemProperty -LiteralPath $key
+    if ($registration.DisplayVersion -ne '2.0.2') { throw 'Installer version mismatch' }
+    if ((Get-Item -LiteralPath $exe).VersionInfo.ProductVersion -notlike '2.0.2*') { throw 'Executable version mismatch' }
+    Write-Output ('Previous version installed in test: ' + $previousAvailable)
+    Write-Output 'PASS: upgrade from 2.0.1; correct new desktop and Start menu ICO paths; artwork SHA-256; version'
+
+} finally {
     if (Test-Path -LiteralPath $uninstaller) {
-        $process = Start-Process -FilePath $uninstaller -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART') -Wait -PassThru -WindowStyle Hidden
-        if ($process.ExitCode -ne 0) { throw "Uninstaller exit code: $($process.ExitCode)" }
+        $process = Start-Process -FilePath $uninstaller -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART') -Wait -PassThru -WindowStyle Hidden
+        if ($process.ExitCode -ne 0) { throw 'Uninstall failed' }
     }
 }
-foreach ($path in @($desktopLink, $menuLink, $uninstallKey, (Join-Path $target 'AureoLink.exe'))) {
-    if (Test-Path -LiteralPath $path) { throw "Uninstall did not remove its installed item: $path" }
+foreach ($path in @($desktopLink,$menuLink,$key,$icon,(Join-Path $targetPath 'AureoLink.exe'))) {
+    if (Test-Path -LiteralPath $path) { throw "Uninstall left item: $path" }
 }
-Write-Output 'PASS: uninstall removes the installed application, shortcuts, and registration'
+Write-Output 'PASS: uninstall removes program, versioned icon, shortcuts and registration'
