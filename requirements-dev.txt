@@ -1,0 +1,4 @@
+-r requirements-server.txt
+-r requirements-desktop.txt
+pytest>=8,<10
+pytest-asyncio>=1,<2

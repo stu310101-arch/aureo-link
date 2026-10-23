@@ -1,0 +1,38 @@
+name: Build Windows EXE
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'desktop/**'
+      - 'requirements-desktop.txt'
+      - 'requirements-dev.txt'
+      - 'server/**'
+      - 'tests/**'
+      - 'pwa/**'
+      - 'BUILD_WINDOWS.cmd'
+      - 'FETCH_TUNNEL.py'
+      - 'PREPARE_LICENSES.py'
+      - 'tools/cloudflared-release.json'
+      - '.github/workflows/windows-exe.yml'
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-dev.txt "pyinstaller>=6,<7"
+      - run: python -m pytest -q
+      - run: node --check pwa/app.js
+      - run: node tests/test_pwa.cjs
+      - run: python FETCH_TUNNEL.py
+      - run: python PREPARE_LICENSES.py
+      - run: python -m PyInstaller --noconfirm --clean --windowed --onefile --name AureoLink --icon pwa/icons/aureo-link.ico --paths . --add-data "pwa;pwa" --add-binary "tools/cloudflared.exe;tools" --add-data "tools/LICENSE-cloudflared.txt;tools" --add-data "tools/cloudflared-release.json;tools" --add-data "THIRD_PARTY_NOTICES.txt;." --add-data "licenses;licenses" desktop/app.py
+      - shell: pwsh
+        run: |
+          Copy-Item QUICK_START.txt dist/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AureoLink-Windows-x64
+          path: dist/

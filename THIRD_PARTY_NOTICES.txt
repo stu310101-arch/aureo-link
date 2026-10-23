@@ -1,0 +1,14 @@
+AUREO LINK free mode includes the official cloudflared binary from Cloudflare.
+Project: https://github.com/cloudflare/cloudflared
+License: Apache License 2.0; see tools/LICENSE-cloudflared.txt.
+Release URL and official SHA256 are recorded in tools/cloudflared-release.json.
+The binary is distributed unchanged and verified during packaging.
+
+Cloudflare Quick Tunnels provide temporary HTTPS access to the local AUREO relay.
+No Cloudflare account or purchased domain is required for this mode.
+These temporary tunnels have no uptime guarantee and change hostname on restart.
+Documentation: https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/
+
+The executable also bundles Python, Tcl/Tk, aiohttp, Pillow, qrcode,
+websocket-client and their runtime dependencies. Their upstream licenses apply.
+Exact package versions are recorded in requirements-build-lock.txt.

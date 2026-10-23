@@ -1,0 +1,87 @@
+AUREO LINK v2.0.0 — 免費 Windows × iPhone 傳輸工具
+更新日期：2026-10-23
+
+下載 Windows EXE：
+https://github.com/stu310101-arch/aureo-link/releases/latest/download/AureoLink.exe
+手機固定入口：https://stu310101-arch.github.io/aureo-link/phone/
+下載頁：https://stu310101-arch.github.io/aureo-link/
+固定手機入口協助開啟各使用者的連線；真正 PWA 位於各自電腦的臨時 HTTPS 網址。
+電腦左側有目前手機網址，可直接開啟或複製；手機也可直接掃 QR Code。
+
+一、直接使用（不需要租伺服器）
+1. 下載單檔 EXE 就能使用；若下載 ZIP，請先完整解壓縮。
+2. EXE 已內嵌所有執行元件，不需要附帶 tools 資料夾。
+3. 雙擊 AureoLink.exe。預設會自動啟動免費連線；通常需要等候數十秒。
+4. 畫面顯示「已連線」與 QR Code 後，用 iPhone 相機掃碼並開啟 Safari。
+5. 在 Windows 按「是」批准自己的手機，即可互傳文字、網址、照片與檔案。
+6. 用完後關閉 AUREO LINK，免費通道也會一起停止。
+
+每位使用者都是使用自己的電腦與自己的手機，不依賴作者的電腦開機。
+使用者自己的電腦必須開機、保持網路連線且開著此工具；睡眠或關機就無法傳輸。
+不需要 Python、Cloudflare 帳號、付費網域或信用卡。
+啟動時工具會透過 Cloudflare Quick Tunnel 建立臨時公開 HTTPS 網址。
+只公開本程式的配對及傳輸服務，收到檔案仍須先取得 Windows 的配對批准。
+
+二、免費模式的使用條件
+- 每次重新啟動會產生新網址，手機需要重新掃描新 QR Code 配對。
+- 舊網址及之前加入主畫面的 PWA 可能在程式關閉後失效。
+- 同一次開啟期間，手機重新進入同一個網址可使用原有 Cookie 重連。
+- Cloudflare Quick Tunnel 為測試與開發服務，沒有可用性保證。
+- 網路封鎖 Cloudflare 時可能無法建立通道；請確認網路後在「設定」重試免費模式。
+- 手機背景執行可能被 iOS 暫停；雙方要同時在線，沒有離線代收。
+- HTTPS/WSS 加密連線，但尚未實作端對端加密，勿將它視為 E2EE 工具。
+
+三、傳輸與保存
+每個檔案最多 20 MiB。Windows 的「貼上傳送」可傳送剪貼簿文字、截圖，
+也可傳送檔案總管複製的檔案。收到同名檔案會另取名稱，不會自動執行。
+手機收到檔案後可按下載，或透過分享儲存到「檔案」。
+手機重開網頁後保留檔名紀錄，檔案內容需要重新傳輸。
+
+Windows 設定、文字紀錄、配對資料及通道記錄位於：
+%LOCALAPPDATA%\AureoLink\
+免費模式配對資料庫：free-relay.sqlite3
+通道診斷記錄：free-tunnel.log（啟動失敗時可查看）
+預設收檔位置：使用者 Downloads\AureoLink\，可在介面更改。
+
+四、連線失敗
+先確認使用官方完整 EXE；缺少內嵌元件時請重新下載。
+點左側「設定」→「啟動免費連線（不需伺服器）」重試。
+若仍無法啟動，查看上面列出的 free-tunnel.log；網路限制或服務異常都可能造成失敗。
+本程式沒有安裝 Windows 常駐服務，也不會修改路由器的連接埠設定。
+
+五、其他模式與重新建置
+若以後有固定中繼服務，可在「設定」填入 wss://你的網域/ws/desktop，
+以及中繼服務的 AUREO_ENROLL_KEY，再按「儲存設定並連線」。
+要切回免費模式，按設定內的免費連線按鈕。
+也可以使用 AureoLink.exe --free 強制以免費模式啟動。
+
+完整原始碼與原有 Docker 部署檔位於 source/。
+重新建置：Windows 安裝 Python 3.12+ 後執行 source/BUILD_WINDOWS.cmd。
+建置流程會先跑測試，再下載並核對官方 cloudflared 的 SHA256，最後產生 EXE。
+建置後的 dist/AureoLink.exe 可單獨分發。
+requirements-build-lock.txt 保存本次建置的 Python 套件版本。
+
+GitHub 可保存原始碼、用 Actions 建置下載包；GitHub Pages 無法單獨執行 Python
+中繼服務。這一版的免費模式已由每位使用者自己的電腦提供中繼，不必依賴 GitHub Pages。
+
+此程式為未簽章的可攜式 EXE，沒有安裝精靈。
+cloudflared 為 Cloudflare 官方程式，授權與版本資訊已內嵌；完整 ZIP 也附有 tools/、licenses/ 及 THIRD_PARTY_NOTICES.txt。
+官方免費通道說明：https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/
+六、第二版新增操作
+- 一次只配對一台手機，成功後電腦 QR Code 和配對碼會停止更新並停用。
+  想換手機時，先在電腦選取目前裝置並按「移除選取裝置」，就會重新出現 QR Code。
+  只因手機暫時離線，不會開放另一台加入。舊版多手機資料會保留最近一台。
+- 傳檔時，手機和電腦都會顯示正在傳送／正在接收、百分比以及完成或中斷狀態。
+  送出端「已送出」表示中繼已處理完整檔案；接收端完成後會顯示接收完成。
+- Windows 預設啟用雙向文字剪貼簿同步。配對且手機在線時，電腦新複製的文字會同步
+  到手機。既有剪貼簿內容不會在剛配對時自動送出，要送出可按「同步目前剪貼簿」。
+- 手機在其他 App 複製文字後，回到本頁點「手機複製 → 電腦可貼上」。如果 iOS
+  要求操作，請在專用剪貼簿欄位長按「貼上」。送出後電腦可直接 Ctrl+V。
+- 電腦複製的文字抵達手機後，點「複製電腦內容」，即可到其他 App 貼上。
+- 取消電腦的「啟用雙向文字剪貼簿同步」可暫停自動傳送與接收寫入。
+- 本版跨裝置剪貼簿支援 12,000 字以內的文字／網址；圖片與檔案請使用傳檔。
+- Safari/PWA 不允許在背景無操作讀取其他 App 的剪貼簿，也要求使用者操作才能寫入。
+  因此不等同 Apple 原生 Universal Clipboard；不能承諾完全無點擊或背景同步。
+官方說明：https://webkit.org/blog/10855/async-clipboard-api/
+
+本版沒有原生 iOS App 或「背面輕點」捷徑，未在真實 iPhone 硬體完成驗證。

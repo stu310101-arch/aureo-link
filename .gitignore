@@ -1,0 +1,14 @@
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+build/
+dist/
+*.spec
+data/
+*.db
+*.sqlite3
+*.tmp
+*.part
+tools/cloudflared.exe
+licenses/

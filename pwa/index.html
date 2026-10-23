@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0e0e11">
+  <meta name="color-scheme" content="dark">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="AUREO LINK">
+  <meta name="description" content="AUREO LINK · 私密的跨裝置文字、連結與檔案傳輸空間">
+  <link rel="icon" type="image/png" href="/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/app.css">
+  <title>AUREO LINK — 共享工作台</title>
+</head>
+<body>
+ <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+ <div class="page">
+  <header class="header">
+   <div class="brand"><div class="mark">◈</div><div><div class="brand-name">AUREO <span>LINK</span></div><div class="brand-sub">PRIVATE DEVICE WORKSPACE</div></div></div>
+   <div class="head-side"><span class="pill" id="connectionPill"><span class="signal"></span> 檢查連線</span></div>
+  </header>
+
+  <section class="install-note" id="installNote" hidden>
+   <div><strong>AUREO LINK 使用提示</strong><p>免費模式每次重開電腦程式後，請重新掃描 QR Code。固定網址的服務可在 Safari 分享 <span aria-label="分享">▣</span> →「加入主畫面」。</p></div>
+   <button class="close-note" id="closeInstall" aria-label="關閉提示">×</button>
+  </section>
+
+  <section id="pairView" class="pair-view">
+   <div class="eyebrow">01 / INITIAL PAIRING</div>
+   <div class="hero-icon">◈</div>
+   <h1>讓裝置，<em>自然連結。</em></h1>
+   <p class="intro">電腦開啟 AUREO LINK 後，掃描畫面上的 QR Code，或輸入電腦顯示的 8 位數配對碼。</p>
+   <div id="pairWaiting" class="pair-waiting" hidden><div class="loader"></div><strong id="pairWaitingTitle">等待電腦確認</strong><p>請在電腦視窗按下「允許」，即可開啟專屬傳送通道。</p></div>
+   <form id="pairForm" class="pin-box">
+    <label for="pin">沒有 QR Code？輸入電腦上的配對碼</label>
+    <div class="pin-form"><input id="pin" inputmode="numeric" autocomplete="one-time-code" maxlength="8" pattern="[0-9]{8}" placeholder="0000 0000" aria-label="8 位數配對碼" required><button type="submit">立即配對 ↗</button></div>
+   </form>
+   <p class="helper" id="pairError" role="status"></p>
+   <div class="trust-items"><div>◎ <span>裝置配對</span></div><div>↗ <span>即時傳輸</span></div><div>◇ <span>專屬工作空間</span></div></div>
+  </section>
+
+  <section id="roomView" class="room" hidden>
+   <aside class="sidebar">
+    <div class="eyebrow">01 / LINKED DEVICES</div>
+    <h2>我的裝置</h2>
+    <div class="device-card"><div class="device-icon">▣</div><div class="device-text"><strong id="computerName">Windows 電腦</strong><span id="computerStatus">正在連線...</span></div><span id="deviceDot" class="device-dot"></span></div>
+    <div class="section-line"></div>
+    <div class="eyebrow">02 / YOUR SPACE</div>
+    <div class="space-selected">◈ <span>即時共享空間</span><span class="space-arrow">↗</span></div>
+    <div class="side-info">只要電腦程式保持開啟，就能用手機即時傳送文字、連結、照片和檔案。<br><br>傳輸經過你設定的中繼伺服器，伺服器不保留聊天內容。</div>
+    <button class="unpair" id="unpairBtn">取消這台手機的配對</button>
+   </aside>
+   <main class="chat-panel">
+    <div class="chat-top"><div><div class="eyebrow">LIVE WORKSPACE / 001</div><h2>即時共享空間 <span class="chat-top-ornament">↗</span></h2></div><span id="chatStatus" class="status-mini">連線中...</span></div>
+    <div class="messages" id="messages" aria-live="polite">
+      <div class="welcome"><div class="welcome-mark">◈</div><h3>這裡是你的傳送空間</h3><p>不必登入通訊軟體。將檔案、圖片、網址或文字放在這裡，另一端就會收到。</p></div>
+    </div>
+    <div class="composer">
+      <div id="transferList" class="transfer-list" aria-live="polite"></div>
+      <div class="clipboard-panel">
+       <strong>文字剪貼簿同步</strong>
+       <p id="clipboardStatus" role="status">手機同步後電腦可直接貼上；電腦複製後，點下方按鈕存入手機剪貼簿。</p>
+       <div class="clipboard-actions"><button id="sendClipboardBtn">手機複製 → 電腦可貼上</button><button id="receiveClipboardBtn" disabled>複製電腦內容</button></div>
+       <textarea id="clipboardInput" rows="1" aria-label="貼上並同步到電腦" placeholder="iPhone 若要求操作，請長按此處貼上，即會同步至電腦"></textarea>
+      </div>
+      <div id="pendingFile" class="pending-file" hidden></div>
+      <div class="compose-entry"><button id="fileBtn" aria-label="附加檔案" title="傳送照片或檔案" class="file-button">＋</button><textarea rows="1" id="messageInput" placeholder="輸入訊息，或貼上連結..." aria-label="訊息"></textarea><button id="pasteBtn" class="mini-button" title="貼上剪貼簿文字">貼上</button><button id="sendBtn" class="send-button" aria-label="傳送">➤</button></div>
+      <input id="fileInput" type="file" multiple hidden>
+      <div class="composer-hint"><span>＋ 可傳檔案與圖片 · 單檔上限 20 MB</span><span>在線即時傳送，不會離線代收</span></div>
+    </div>
+   </main>
+  </section>
+  <footer class="footer"><span>© AUREO LINK · MADE FOR SEAMLESS FLOW</span><span>WINDOWS × IOS PWA</span></footer>
+ </div>
+ <div class="toast" id="toast" role="status" aria-live="polite"></div>
+ <script src="/app.js" defer></script>
+</body>
+</html>

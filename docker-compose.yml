@@ -1,0 +1,31 @@
+services:
+  hub:
+    build: .
+    restart: unless-stopped
+    environment:
+      AUREO_HOST: 0.0.0.0
+      AUREO_PORT: 8787
+      AUREO_PUBLIC_URL: https://${DOMAIN}
+      AUREO_DB_PATH: /data/hub.sqlite3
+      AUREO_ENROLL_KEY: ${AUREO_ENROLL_KEY}
+    volumes:
+      - hub-data:/data
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - hub
+    environment:
+      DOMAIN: ${DOMAIN}
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+volumes:
+  hub-data:
+  caddy-data:
+  caddy-config:
