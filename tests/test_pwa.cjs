@@ -46,7 +46,7 @@ async function main() {
     atob:value=>Buffer.from(value,'base64').toString('latin1'),
     btoa:value=>Buffer.from(value,'latin1').toString('base64'),
   };
-  let source = fs.readFileSync('pwa/app.js','utf8');
+  let source = fs.readFileSync('pwa/app.js','utf8').replace(/\r\n/g, '\n');
   assert(source.includes('  initEvents();\n  loadApp();'));
   source = source.replace('  initEvents();\n  loadApp();', `
     globalThis.uiTest = {ready(){paired=true;peerOnline=true;}, connect,
