@@ -12,3 +12,4 @@ data/
 *.part
 tools/cloudflared.exe
 licenses/
+.build-tools/

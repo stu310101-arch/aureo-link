@@ -1,0 +1,42 @@
+param(
+    [Parameter(Mandatory = $true)][string]$InstallerPath,
+    [Parameter(Mandatory = $true)][string]$InstallDir
+)
+$ErrorActionPreference = 'Stop'
+$setup = (Resolve-Path -LiteralPath $InstallerPath).Path
+$target = [IO.Path]::GetFullPath($InstallDir)
+$desktopLink = Join-Path ([Environment]::GetFolderPath('DesktopDirectory')) 'AUREO LINK.lnk'
+$programFolder = Join-Path ([Environment]::GetFolderPath('Programs')) 'AUREO LINK'
+$menuLink = Join-Path $programFolder 'AUREO LINK.lnk'
+$uninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\{9ABF5441-8F5B-4352-80DC-F3B87625F2E9}_is1'
+foreach ($path in @($target, $desktopLink, $programFolder, $uninstallKey)) {
+    if (Test-Path -LiteralPath $path) { throw "Installer test requires an unused location: $path" }
+}
+$uninstaller = Join-Path $target 'unins000.exe'
+try {
+    $process = Start-Process -FilePath $setup -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', ('/DIR="' + $target + '"')) -Wait -PassThru -WindowStyle Hidden
+    if ($process.ExitCode -ne 0) { throw "Installer exit code: $($process.ExitCode)" }
+    $exe = Join-Path $target 'AureoLink.exe'
+    foreach ($path in @($exe, $desktopLink, $menuLink, $uninstaller, $uninstallKey)) {
+        if (-not (Test-Path -LiteralPath $path)) { throw "Installed item missing: $path" }
+    }
+    $shell = New-Object -ComObject WScript.Shell
+    foreach ($path in @($desktopLink, $menuLink)) {
+        $shortcut = $shell.CreateShortcut($path)
+        if ($shortcut.TargetPath -ne $exe) { throw "Shortcut points to the wrong executable: $path" }
+        if ($shortcut.WorkingDirectory -ne $target) { throw "Shortcut working directory is incorrect: $path" }
+    }
+    $registration = Get-ItemProperty -LiteralPath $uninstallKey
+    if ($registration.DisplayVersion -ne '2.0.1') { throw 'Installed version is incorrect' }
+    Write-Output 'PASS: install, default desktop shortcut, Start menu shortcut, and uninstall registration'
+}
+finally {
+    if (Test-Path -LiteralPath $uninstaller) {
+        $process = Start-Process -FilePath $uninstaller -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART') -Wait -PassThru -WindowStyle Hidden
+        if ($process.ExitCode -ne 0) { throw "Uninstaller exit code: $($process.ExitCode)" }
+    }
+}
+foreach ($path in @($desktopLink, $menuLink, $uninstallKey, (Join-Path $target 'AureoLink.exe'))) {
+    if (Test-Path -LiteralPath $path) { throw "Uninstall did not remove its installed item: $path" }
+}
+Write-Output 'PASS: uninstall removes the installed application, shortcuts, and registration'

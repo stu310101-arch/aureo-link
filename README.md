@@ -1,19 +1,24 @@
 # AUREO LINK — Windows × iPhone PWA 即時共享工作台
 
-> Windows 單檔工具與完整原始碼。延續 AUREATE 的霧黑、香檳金、繁體中文工具介面。
+> Windows 安裝版、可攜版與完整原始碼。延續 AUREATE 的霧黑、香檳金、繁體中文工具介面。
 > Windows EXE + iOS 主畫面 PWA + HTTPS/WSS 中繼伺服器。**非端對端加密**，自架中繼伺服器可存取即時傳輸內容。
 
 ## 下載與開始使用
 
-**[下載 Windows EXE](https://github.com/stu310101-arch/aureo-link/releases/latest/download/AureoLink.exe)** · **[手機入口](https://stu310101-arch.github.io/aureo-link/phone/)** · **[下載頁](https://stu310101-arch.github.io/aureo-link/)** · [完整 Release](https://github.com/stu310101-arch/aureo-link/releases/latest)
+**[下載 Windows 安裝版](https://github.com/stu310101-arch/aureo-link/releases/latest/download/AureoLink-Setup.exe)** · **[手機入口](https://stu310101-arch.github.io/aureo-link/phone/)** · **[下載頁](https://stu310101-arch.github.io/aureo-link/)** · [完整 Release](https://github.com/stu310101-arch/aureo-link/releases/latest)
 
-1. 下載並開啟 `AureoLink.exe`，等待免費 HTTPS 通道與 QR Code 出現。
-2. 用 iPhone 相機掃碼，或從「手機入口」貼上電腦顯示的連線網址。
-3. 在電腦確認配對，即可互傳。電腦左側也能開啟或複製目前手機 PWA 網址。
+1. 下載並開啟 `AureoLink-Setup.exe`，依繁體中文安裝精靈完成安裝；「建立桌面捷徑」預設勾選。
+2. 從桌面或開始功能表開啟 **AUREO LINK**，等待免費 HTTPS 通道與 QR Code 出現。
+3. 用 iPhone 相機掃碼，或從「手機入口」貼上電腦顯示的連線網址。
+4. 在電腦確認配對，即可互傳。電腦左側也能開啟或複製目前手機 PWA 網址。
 
-單獨下載 EXE 即可使用，無須另裝 Python 或附帶 tools 資料夾。免費模式由**每位使用者自己的電腦**提供服務；需保持該電腦開機、連網並開著程式。固定手機入口協助開啟使用者的連線，實際 PWA 在該電腦的臨時 HTTPS 網址運作。程式重啟後請重新掃碼。
+安裝到目前使用者的 `%LOCALAPPDATA%\Programs\AureoLink`，不需系統管理員權限；可從 Windows「設定 → 應用程式」解除安裝。解除安裝會移除程式與捷徑，保留設定、歷史紀錄及收到的檔案。另提供 [可攜版 AureoLink.exe](https://github.com/stu310101-arch/aureo-link/releases/latest/download/AureoLink.exe)，可直接執行，無安裝精靈或自動建立捷徑。
+
+兩個版本都無須另裝 Python 或附帶 tools 資料夾。免費模式由**每位使用者自己的電腦**提供服務；需保持該電腦開機、連網並開著程式。固定手機入口協助開啟使用者的連線，實際 PWA 在該電腦的臨時 HTTPS 網址運作。程式重啟後請重新掃碼。
 
 ## 具備功能
+
+- **2.0.1 安裝版**：繁體中文安裝精靈、預設勾選桌面捷徑、開始功能表捷徑，以及 Windows 解除安裝登錄。
 
 - **第二版更新**：一次只允許一個已配對手機，成功後停止核發與更新 QR/PIN，移除後才能再配對。既有多裝置資料會保留最近一台。
 - 手機與桌面顯示傳送／接收百分比、等待中繼確認、送出、接收完成及中斷提示。
@@ -98,13 +103,15 @@ python -m server.app
 
 ### 建立 EXE
 
+要建立含桌面捷徑的安裝精靈，執行 `BUILD_INSTALLER.cmd`，產出 `dist/installer/AureoLink-Setup.exe`。它先建置可攜 EXE，再下載經 SHA256 核對的官方 Inno Setup 編譯器至 `.build-tools/`（可攜模式），不會安裝編譯器到系統或設定檔案關聯。
+
 在 **Windows 電腦**上雙擊 `BUILD_WINDOWS.cmd`。它會安裝 PyInstaller 與相依套件並產生：
 
 ```
 dist\AureoLink.exe
 ```
 
-也可推送到 GitHub 後，在 Actions 手動執行 `Build Windows EXE` 並下載 `AureoLink-Windows-x64` artifact。建置前會先執行 Python 測試，通過後才產出 EXE。`BUILD_WINDOWS.cmd --no-pause` 可供自動化建置使用。首次啟動預設進入免費連線模式；單檔 EXE 已內含 Python、網頁、中繼服務與 cloudflared，使用者不需要另行安裝 Python。EXE 未加數位簽章。
+也可推送到 GitHub 後，在 Actions 手動執行 `Build Windows EXE and Installer` 並下載 `AureoLink-Windows-x64` artifact。建置前會先執行 Python 與 PWA 測試，並驗證安裝、預設桌面捷徑及解除安裝，通過後才提供完整成品。`BUILD_WINDOWS.cmd --no-pause` / `BUILD_INSTALLER.cmd --no-pause` 可供自動化建置使用。首次啟動預設進入免費連線模式；單檔 EXE 已內含 Python、網頁、中繼服務與 cloudflared，使用者不需要另行安裝 Python。EXE 未加數位簽章。
 
 ## 3. iPhone 使用方式
 
@@ -118,7 +125,7 @@ dist\AureoLink.exe
 
 | 功能 / 環境 | MVP 狀態 | 說明 |
 |---|---|---|
-| Windows EXE | 可攜式單檔程式 | `BUILD_WINDOWS.cmd` / GitHub Actions；未提供簽章安裝器 |
+| Windows EXE | 安裝精靈與可攜式單檔 | `BUILD_INSTALLER.cmd` / `BUILD_WINDOWS.cmd` / GitHub Actions；兩者均未加數位簽章 |
 | iOS 主畫面 PWA | 支援 | 使用者須手動從瀏覽器加入主畫面；網站不能強制安裝 |
 | iPhone 自動監聽剪貼簿 | **不支援無提示常駐監聽** | 受 Safari 隱私及使用者手勢限制；請使用貼上、分享或手動選檔 |
 | iPhone 自動指定檔案儲存路徑 | **不支援** | 由 iOS 檔案 / 分享介面決定；Windows EXE 可指定路徑 |

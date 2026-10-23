@@ -12,3 +12,12 @@ Documentation: https://developers.cloudflare.com/tunnel/get-started/quick-tunnel
 The executable also bundles Python, Tcl/Tk, aiohttp, Pillow, qrcode,
 websocket-client and their runtime dependencies. Their upstream licenses apply.
 Exact package versions are recorded in requirements-build-lock.txt.
+
+The Windows setup wizard is built with Inno Setup 6.7.3.
+Project: https://jrsoftware.org/ and https://github.com/jrsoftware/issrc
+Its runtime license is installed under licenses/InnoSetup/LICENSE.txt.
+The compiler is fetched from the official release and verified against SHA256.
+Traditional Chinese wizard messages retain their authors' attribution in
+installer/ChineseTraditional.isl. Pinned source:
+https://raw.githubusercontent.com/jrsoftware/issrc/468f9964a00f5fed0f816d70d1a218863474b010/Files/Languages/ChineseTraditional.isl
+SHA256: 031684fc769259291fd563338b5abe20b7753c88ab5a2976b83a80788deb8455
