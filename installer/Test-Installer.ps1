@@ -23,7 +23,7 @@ try {
     $shell = New-Object -ComObject WScript.Shell
     foreach ($path in @($desktopLink, $menuLink)) {
         $shortcut = $shell.CreateShortcut($path)
-        if ($shortcut.TargetPath -ne $exe) { throw "Shortcut points to the wrong executable: $path" }
+        if ($shortcut.TargetPath -ne $exe) { throw "Shortcut points to the wrong executable: $path; actual='$($shortcut.TargetPath)'; expected='$exe'" }
         if ($shortcut.WorkingDirectory -ne $target) { throw "Shortcut working directory is incorrect: $path" }
     }
     $registration = Get-ItemProperty -LiteralPath $uninstallKey
