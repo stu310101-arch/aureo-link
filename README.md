@@ -1,14 +1,16 @@
-# AUREO LINK — Windows × iPhone PWA 即時共享工作台
+# Amos電腦手機連結器 — Windows × iPhone PWA 即時共享工作台
 
-> Windows 安裝版、可攜版與完整原始碼。延續 AUREATE 的霧黑、香檳金、繁體中文工具介面。
+> Windows 安裝版、可攜版與完整原始碼。Amos 工具系列：統一霧黑、香檳金圖示與繁體中文介面。
 > Windows EXE + iOS 主畫面 PWA + HTTPS/WSS 中繼伺服器。**非端對端加密**，自架中繼伺服器可存取即時傳輸內容。
+
+<img src="branding/amos-link.png" width="128" alt="Amos電腦手機連結器圖示">
 
 ## 下載與開始使用
 
-**[下載 Windows 安裝版](https://github.com/stu310101-arch/aureo-link/releases/latest/download/AureoLink-Setup.exe)** · **[手機入口](https://stu310101-arch.github.io/aureo-link/phone/)** · **[下載頁](https://stu310101-arch.github.io/aureo-link/)** · [完整 Release](https://github.com/stu310101-arch/aureo-link/releases/latest)
+**[下載 Windows 安裝版](https://github.com/stu310101-arch/aureo-link/releases/latest/download/AmosLink-Setup.exe)** · **[手機入口](https://stu310101-arch.github.io/aureo-link/phone/)** · **[下載頁](https://stu310101-arch.github.io/aureo-link/)** · [完整 Release](https://github.com/stu310101-arch/aureo-link/releases/latest)
 
-1. 下載並開啟 `AureoLink-Setup.exe`，依繁體中文安裝精靈完成安裝；「建立桌面捷徑」預設勾選。
-2. 從桌面或開始功能表開啟 **AUREO LINK**，等待免費 HTTPS 通道與 QR Code 出現。
+1. 下載並開啟 `AmosLink-Setup.exe`，依繁體中文安裝精靈完成安裝；「建立桌面捷徑」預設勾選。
+2. 從桌面或開始功能表開啟 **Amos電腦手機連結器**，等待免費 HTTPS 通道與 QR Code 出現。
 3. 用 iPhone 相機掃碼，或從「手機入口」貼上電腦顯示的連線網址。
 4. 在電腦確認配對，即可互傳。電腦左側也能開啟或複製目前手機 PWA 網址。
 
@@ -103,7 +105,7 @@ python -m server.app
 
 ### 建立 EXE
 
-要建立含桌面捷徑的安裝精靈，執行 `BUILD_INSTALLER.cmd`，產出 `dist/installer/AureoLink-Setup.exe`。它先建置可攜 EXE，再下載經 SHA256 核對的官方 Inno Setup 編譯器至 `.build-tools/`（可攜模式），不會安裝編譯器到系統或設定檔案關聯。
+要建立含桌面捷徑的安裝精靈，執行 `BUILD_INSTALLER.cmd`，產出 `dist/installer/AmosLink-Setup.exe`。它先建置可攜 EXE，再下載經 SHA256 核對的官方 Inno Setup 編譯器至 `.build-tools/`（可攜模式），不會安裝編譯器到系統或設定檔案關聯。
 
 在 **Windows 電腦**上雙擊 `BUILD_WINDOWS.cmd`。它會安裝 PyInstaller 與相依套件並產生：
 
@@ -118,7 +120,7 @@ dist\AureoLink.exe
 1. 在電腦開啟 `AureoLink.exe`，確認顯示已連線與配對 QR。
 2. 用 iPhone 相機掃 QR，開啟 Safari 網頁。
 3. 在 Windows 桌面彈窗按「是」確認這支 iPhone。
-4. Safari 網頁進入即時共享空間。在 Safari「分享 → 加入主畫面 → 開啟為 Web App／加入」，之後點主畫面上的 AUREO LINK 圖示即可重連。
+4. Safari 網頁進入即時共享空間。在 Safari「分享 → 加入主畫面 → 開啟為 Web App／加入」，之後點主畫面上的 Amos電腦手機連結器 圖示即可重連。
 5. 如果手機安裝後未保留 Safari 配對（例如較舊 iOS 或瀏覽資料被清除），**在已安裝的 PWA 內輸入電腦顯示的 8 位數配對碼**，桌面再次確認即可。
 
 ## 限制與安全注意
@@ -162,3 +164,15 @@ node --check pwa/app.js
 - [AUREATE](https://github.com/stu310101-arch/AUREATE) — 黑金、極簡、繁體中文工作台
 
 MIT-style development sample; see `LICENSE.txt`. Production deployment and security review remain the deployer's responsibility.
+
+## Amos 工具系列
+
+![Amos 黑金圖示系列](branding/Amos-family-preview.png)
+
+| 工具 | 功能 | Windows 安裝精靈 |
+| --- | --- | --- |
+| Amos錄影與截圖 | 螢幕錄影、範圍與視窗截圖 | [下載](https://github.com/stu310101-arch/screen_recoder/releases/latest/download/AmosRecorder-Setup.exe) |
+| Amos影音下載 | 影音下載、合併與轉檔 | [下載](https://github.com/stu310101-arch/AUREATE/releases/latest/download/AmosDownloader-Setup.exe) |
+| Amos電腦手機連結器 | 電腦與手機互傳檔案、文字 | [下載](https://github.com/stu310101-arch/aureo-link/releases/latest/download/AmosLink-Setup.exe) |
+
+三款採用統一黑金圖示。下載後執行安裝精靈，預設勾選建立桌面捷徑，也會加入開始功能表與 Windows 解除安裝清單。

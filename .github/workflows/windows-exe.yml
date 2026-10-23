@@ -32,14 +32,14 @@ jobs:
       - run: python FETCH_TUNNEL.py
       - run: python PREPARE_LICENSES.py
       - run: python FETCH_INSTALLER_TOOL.py
-      - run: python -m PyInstaller --noconfirm --clean --windowed --onefile --name AureoLink --icon pwa/icons/aureo-link.ico --paths . --add-data "pwa;pwa" --add-binary "tools/cloudflared.exe;tools" --add-data "tools/LICENSE-cloudflared.txt;tools" --add-data "tools/cloudflared-release.json;tools" --add-data "THIRD_PARTY_NOTICES.txt;." --add-data "licenses;licenses" desktop/app.py
+      - run: python -m PyInstaller --noconfirm --clean --windowed --onefile --name AureoLink --icon pwa/icons/aureo-link.ico --version-file desktop/version-info.txt --paths . --add-data "pwa;pwa" --add-binary "tools/cloudflared.exe;tools" --add-data "tools/LICENSE-cloudflared.txt;tools" --add-data "tools/cloudflared-release.json;tools" --add-data "THIRD_PARTY_NOTICES.txt;." --add-data "licenses;licenses" desktop/app.py
       - shell: pwsh
         run: |
           Copy-Item QUICK_START.txt dist/
           & .build-tools/inno-setup-6.7.3/ISCC.exe installer/AureoLink.iss
           if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed' }
       - shell: pwsh
-        run: ./installer/Test-Installer.ps1 -InstallerPath dist/installer/AureoLink-Setup.exe -InstallDir "$env:RUNNER_TEMP/AureoLink-install-test"
+        run: ./installer/Test-Installer.ps1 -InstallerPath dist/installer/AmosLink-Setup.exe -InstallDir "$env:RUNNER_TEMP/AureoLink-install-test"
       - uses: actions/upload-artifact@v4
         with:
           name: AureoLink-Windows-x64

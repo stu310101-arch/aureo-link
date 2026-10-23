@@ -1,23 +1,23 @@
-AUREO LINK v2.0.1 — 免費 Windows × iPhone 傳輸工具
+Amos電腦手機連結器 v2.0.1 — 免費 Windows × iPhone 傳輸工具
 更新日期：2026-10-23
 
 下載 Windows 安裝版：
-https://github.com/stu310101-arch/aureo-link/releases/latest/download/AureoLink-Setup.exe
+https://github.com/stu310101-arch/aureo-link/releases/latest/download/AmosLink-Setup.exe
 手機固定入口：https://stu310101-arch.github.io/aureo-link/phone/
 下載頁：https://stu310101-arch.github.io/aureo-link/
 固定手機入口協助開啟各使用者的連線；真正 PWA 位於各自電腦的臨時 HTTPS 網址。
 電腦左側有目前手機網址，可直接開啟或複製；手機也可直接掃 QR Code。
 
 一、直接使用（不需要租伺服器）
-1. 下載並執行 AureoLink-Setup.exe，依繁體中文安裝精靈按「下一步」。
-2. 「建立桌面捷徑」預設勾選。完成後從桌面或開始功能表開啟 AUREO LINK。
+1. 下載並執行 AmosLink-Setup.exe，依繁體中文安裝精靈按「下一步」。
+2. 「建立桌面捷徑」預設勾選。完成後從桌面或開始功能表開啟 Amos電腦手機連結器。
 3. 程式預設會自動啟動免費連線；通常需要等候數十秒。
    安裝版不需要另外的 Python 或 tools 資料夾，也不需要系統管理員權限。
    安裝位置：%LOCALAPPDATA%\Programs\AureoLink\
    日後可從 Windows「設定 → 應用程式」解除安裝；保留使用者設定及收到的檔案。
 4. 畫面顯示「已連線」與 QR Code 後，用 iPhone 相機掃碼並開啟 Safari。
 5. 在 Windows 按「是」批准自己的手機，即可互傳文字、網址、照片與檔案。
-6. 用完後關閉 AUREO LINK，免費通道也會一起停止。
+6. 用完後關閉 Amos電腦手機連結器，免費通道也會一起停止。
 
 每位使用者都是使用自己的電腦與自己的手機，不依賴作者的電腦開機。
 使用者自己的電腦必須開機、保持網路連線且開著此工具；睡眠或關機就無法傳輸。
@@ -70,7 +70,7 @@ GitHub 可保存原始碼、用 Actions 建置下載包；GitHub Pages 無法單
 安裝版與可攜版均未加數位簽章。
 另外提供 AureoLink.exe 可攜版，直接執行但不會自動建立桌面捷徑：
 https://github.com/stu310101-arch/aureo-link/releases/latest/download/AureoLink.exe
-建立安裝精靈請執行 BUILD_INSTALLER.cmd，產出 dist/installer/AureoLink-Setup.exe。
+建立安裝精靈請執行 BUILD_INSTALLER.cmd，產出 dist/installer/AmosLink-Setup.exe。
 cloudflared 為 Cloudflare 官方程式，授權與版本資訊已內嵌；完整 ZIP 也附有 tools/、licenses/ 及 THIRD_PARTY_NOTICES.txt。
 官方免費通道說明：https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/
 六、第二版新增操作

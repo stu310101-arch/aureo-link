@@ -5,9 +5,9 @@ param(
 $ErrorActionPreference = 'Stop'
 $setup = (Resolve-Path -LiteralPath $InstallerPath).Path
 $target = [IO.Path]::GetFullPath($InstallDir)
-$desktopLink = Join-Path ([Environment]::GetFolderPath('DesktopDirectory')) 'AUREO LINK.lnk'
-$programFolder = Join-Path ([Environment]::GetFolderPath('Programs')) 'AUREO LINK'
-$menuLink = Join-Path $programFolder 'AUREO LINK.lnk'
+$desktopLink = Join-Path ([Environment]::GetFolderPath('DesktopDirectory')) 'Amos電腦手機連結器.lnk'
+$programFolder = Join-Path ([Environment]::GetFolderPath('Programs')) 'Amos電腦手機連結器'
+$menuLink = Join-Path $programFolder 'Amos電腦手機連結器.lnk'
 $uninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\{9ABF5441-8F5B-4352-80DC-F3B87625F2E9}_is1'
 foreach ($path in @($target, $desktopLink, $programFolder, $uninstallKey)) {
     if (Test-Path -LiteralPath $path) { throw "Installer test requires an unused location: $path" }

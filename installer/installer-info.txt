@@ -1,4 +1,4 @@
-AUREO LINK — Windows × iPhone 裝置傳輸工具
+Amos電腦手機連結器 — Windows × iPhone 裝置傳輸工具
 
 安裝精靈會將程式安裝到目前使用者的電腦，並加入開始功能表。
 「建立桌面捷徑」預設勾選，安裝完成後即可從桌面開啟。
@@ -6,7 +6,7 @@ AUREO LINK — Windows × iPhone 裝置傳輸工具
 日後可從 Windows「設定 → 應用程式」解除安裝。
 
 使用方式：
-1. 開啟 AUREO LINK，等待免費 HTTPS 通道及 QR Code 出現。
+1. 開啟 Amos電腦手機連結器，等待免費 HTTPS 通道及 QR Code 出現。
 2. 手機掃描 QR Code，在電腦確認配對。
 3. 傳輸時請讓自己的電腦保持開機、連網並開著工具。
 

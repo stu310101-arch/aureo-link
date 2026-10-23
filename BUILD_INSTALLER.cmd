@@ -8,7 +8,7 @@ if errorlevel 1 goto failed
 ".build-tools\inno-setup-6.7.3\ISCC.exe" installer\AureoLink.iss
 if errorlevel 1 goto failed
 echo.
-echo Success: dist\installer\AureoLink-Setup.exe
+echo Success: dist\installer\AmosLink-Setup.exe
 if not "%~1"=="--no-pause" pause
 exit /b 0
 :failed

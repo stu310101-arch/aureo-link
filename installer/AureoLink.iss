@@ -1,4 +1,4 @@
-#define MyAppName "AUREO LINK"
+#define MyAppName "Amos電腦手機連結器"
 #define MyAppVersion "2.0.1"
 #define MyAppPublisher "stu310101-arch"
 #define MyAppURL "https://github.com/stu310101-arch/aureo-link"
@@ -13,12 +13,13 @@ AppSupportURL={#MyAppURL}/issues
 AppUpdatesURL={#MyAppURL}/releases/latest
 DefaultDirName={localappdata}\Programs\AureoLink
 DefaultGroupName={#MyAppName}
+UsePreviousGroup=no
 PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
 OutputDir=..\dist\installer
-OutputBaseFilename=AureoLink-Setup
+OutputBaseFilename=AmosLink-Setup
 SetupIconFile=..\pwa\icons\aureo-link.ico
 UninstallDisplayIcon={app}\AureoLink.exe
 WizardStyle=modern
@@ -31,7 +32,8 @@ CloseApplications=yes
 RestartApplications=no
 SetupMutex=AureoLink.Setup
 VersionInfoVersion={#MyAppVersion}
-VersionInfoDescription=AUREO LINK 安裝程式
+VersionInfoDescription=Amos電腦手機連結器 安裝程式
+VersionInfoProductName=Amos電腦手機連結器
 
 [Languages]
 Name: "chinesetraditional"; MessagesFile: "ChineseTraditional.isl"
@@ -49,9 +51,14 @@ Source: "..\tools\LICENSE-cloudflared.txt"; DestDir: "{app}\licenses\cloudflared
 Source: "..\tools\cloudflared-release.json"; DestDir: "{app}\licenses\cloudflared"; Flags: ignoreversion
 
 [Icons]
-Name: "{autoprograms}\AUREO LINK\AUREO LINK"; Filename: "{app}\AureoLink.exe"; WorkingDir: "{app}"; IconFilename: "{app}\AureoLink.exe"
-Name: "{autoprograms}\AUREO LINK\使用說明"; Filename: "{app}\使用說明.txt"
-Name: "{autodesktop}\AUREO LINK"; Filename: "{app}\AureoLink.exe"; WorkingDir: "{app}"; IconFilename: "{app}\AureoLink.exe"; Tasks: desktopicon
+Name: "{autoprograms}\Amos電腦手機連結器\Amos電腦手機連結器"; Filename: "{app}\AureoLink.exe"; WorkingDir: "{app}"; IconFilename: "{app}\AureoLink.exe"
+Name: "{autoprograms}\Amos電腦手機連結器\使用說明"; Filename: "{app}\使用說明.txt"
+Name: "{autodesktop}\Amos電腦手機連結器"; Filename: "{app}\AureoLink.exe"; WorkingDir: "{app}"; IconFilename: "{app}\AureoLink.exe"; Tasks: desktopicon
+
+[InstallDelete]
+Type: files; Name: "{autodesktop}\AUREO LINK.lnk"
+Type: files; Name: "{autoprograms}\AUREO LINK\AUREO LINK.lnk"
+Type: files; Name: "{autoprograms}\AUREO LINK\使用說明.lnk"
 
 [Run]
-Filename: "{app}\AureoLink.exe"; Description: "立即啟動 AUREO LINK"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\AureoLink.exe"; Description: "立即啟動 Amos電腦手機連結器"; Flags: nowait postinstall skipifsilent

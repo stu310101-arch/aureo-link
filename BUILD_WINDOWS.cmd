@@ -26,7 +26,7 @@ if errorlevel 1 goto failed
 if errorlevel 1 goto failed
 .venv\Scripts\python.exe PREPARE_LICENSES.py
 if errorlevel 1 goto failed
-.venv\Scripts\python.exe -m PyInstaller --noconfirm --clean --windowed --onefile --name AureoLink --icon pwa/icons/aureo-link.ico --paths . --add-data "pwa;pwa" --add-binary "tools/cloudflared.exe;tools" --add-data "tools/LICENSE-cloudflared.txt;tools" --add-data "tools/cloudflared-release.json;tools" --add-data "THIRD_PARTY_NOTICES.txt;." --add-data "licenses;licenses" desktop\app.py
+.venv\Scripts\python.exe -m PyInstaller --noconfirm --clean --windowed --onefile --name AureoLink --icon pwa/icons/aureo-link.ico --version-file desktop/version-info.txt --paths . --add-data "pwa;pwa" --add-binary "tools/cloudflared.exe;tools" --add-data "tools/LICENSE-cloudflared.txt;tools" --add-data "tools/cloudflared-release.json;tools" --add-data "THIRD_PARTY_NOTICES.txt;." --add-data "licenses;licenses" desktop\app.py
 if errorlevel 1 goto failed
 echo.
 echo Success: dist\AureoLink.exe (self-contained)

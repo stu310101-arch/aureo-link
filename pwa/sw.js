@@ -1,4 +1,4 @@
-const CACHE = 'aureo-shell-v3';
+const CACHE = 'amos-shell-v4';
 const SHELL = ['/', '/app.css', '/app.js', '/manifest.webmanifest', '/icons/icon-192.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));

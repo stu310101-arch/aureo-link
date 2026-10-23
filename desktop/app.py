@@ -1,4 +1,4 @@
-"""AUREO LINK Windows desktop companion (Tkinter / dark-gold UI)."""
+"""Amos device-link Windows desktop companion (Tkinter / dark-gold UI)."""
 from __future__ import annotations
 
 import base64
@@ -26,7 +26,7 @@ if str(RESOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(RESOURCE_ROOT))
 from desktop.free_mode import FreeRelay
 
-APP = "AUREO LINK"
+APP = "Amos電腦手機連結器"
 BG = "#0E0E11"
 PANEL = "#17171B"
 CARD = "#212126"
@@ -119,7 +119,7 @@ class Desktop:
         self.public_url = ''
 
         self.root = Tk()
-        self.root.title("AUREO LINK · 裝置傳輸工作台")
+        self.root.title("Amos電腦手機連結器")
         self.root.configure(bg=BG)
         self.root.geometry("1120x800")
         self.root.minsize(1000, 800)
@@ -166,11 +166,13 @@ class Desktop:
     def build_ui(self):
         top = Frame(self.root, bg=BG, height=74)
         top.pack(side="top", fill="x", padx=24, pady=(16, 5))
-        Label(top, text="◈  AUREO", bg=BG, fg=GOLD,
-              font=("Segoe UI", 21, "bold")).pack(side="left")
-        Label(top, text="/ LINK", bg=BG, fg=TEXT,
-              font=("Segoe UI", 21, "bold")).pack(side="left")
-        Label(top, text="PRIVATE DEVICE WORKSPACE", bg=BG, fg=MUTED,
+        self.brand_icon = ImageTk.PhotoImage(Image.open(RESOURCE_ROOT / "pwa/icons/icon-192.png").resize((48, 48), Image.Resampling.LANCZOS))
+        Label(top, image=self.brand_icon, bg=BG).pack(side="left", padx=(0, 10))
+        Label(top, text="Amos", bg=BG, fg=GOLD,
+              font=("Microsoft JhengHei UI", 18, "bold")).pack(side="left", padx=(0, 6))
+        Label(top, text="電腦手機連結器", bg=BG, fg=TEXT,
+              font=("Microsoft JhengHei UI", 18, "bold")).pack(side="left", padx=(0, 6))
+        Label(top, text="WINDOWS × IPHONE", bg=BG, fg=MUTED,
               font=("Consolas", 9)).pack(side="left", padx=(19, 0), pady=(9, 0))
         self.status = Label(top, textvariable=self.status_var, bg=BG, fg=MUTED,
                             font=("Microsoft JhengHei UI", 11, "bold"))

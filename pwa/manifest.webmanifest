@@ -1,6 +1,6 @@
 {
-  "name": "AUREO LINK — 裝置共享空間",
-  "short_name": "AUREO LINK",
+  "name": "Amos電腦手機連結器 — 裝置共享空間",
+  "short_name": "Amos連結器",
   "description": "電腦與 iPhone 的專屬即時傳輸空間",
   "id": "/",
   "start_url": "/",
