@@ -121,8 +121,8 @@ class Desktop:
         self.root = Tk()
         self.root.title("AUREO LINK · 裝置傳輸工作台")
         self.root.configure(bg=BG)
-        self.root.geometry("1120x720")
-        self.root.minsize(1000, 720)
+        self.root.geometry("1120x800")
+        self.root.minsize(1000, 800)
         resource_root = Path(sys._MEIPASS) if getattr(sys, "frozen", False) else Path(__file__).resolve().parent.parent
         icon = resource_root / "pwa" / "icons" / "aureo-link.ico"
         if icon.is_file():
