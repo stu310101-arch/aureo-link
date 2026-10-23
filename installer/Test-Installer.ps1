@@ -1,4 +1,4 @@
-param(
+﻿param(
     [Parameter(Mandatory = $true)][string]$InstallerPath,
     [Parameter(Mandatory = $true)][string]$InstallDir
 )
@@ -22,7 +22,10 @@ try {
     }
     $shell = New-Object -ComObject WScript.Shell
     foreach ($path in @($desktopLink, $menuLink)) {
-        $shortcut = $shell.CreateShortcut($path)
+        $inspectionLink = Join-Path $env:RUNNER_TEMP 'Amos-shortcut-inspection.lnk'
+        Copy-Item -LiteralPath $path -Destination $inspectionLink -Force
+        try { $shortcut = $shell.CreateShortcut($inspectionLink) }
+        finally { Remove-Item -LiteralPath $inspectionLink -Force }
         if ($shortcut.TargetPath -ne $exe) { throw "Shortcut points to the wrong executable: $path; actual='$($shortcut.TargetPath)'; expected='$exe'" }
         if ($shortcut.WorkingDirectory -ne $target) { throw "Shortcut working directory is incorrect: $path" }
     }
