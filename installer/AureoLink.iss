@@ -1,5 +1,5 @@
 #define MyAppName "Amos電腦手機連結器"
-#define MyAppVersion "2.0.2"
+#define MyAppVersion "3.0.0"
 #define MyAppPublisher "stu310101-arch"
 #define MyAppURL "https://github.com/stu310101-arch/aureo-link"
 

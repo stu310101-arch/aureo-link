@@ -1,1 +1,26 @@
-{"name":"Amos電腦手機連結器 手機連線入口","short_name":"Amos電腦手機連結器","start_url":"./","scope":"./","display":"standalone","background_color":"#0e0e11","theme_color":"#0e0e11","icons":[{"src":"../assets/icon-192.png","sizes":"192x192","type":"image/png"},{"src":"../assets/icon-512.png","sizes":"512x512","type":"image/png"}]}
+{
+  "name": "Amos電腦手機連結器 — 裝置共享空間",
+  "short_name": "Amos連結器",
+  "description": "安裝一次，App 內掃碼、8 位數連線與已配對電腦自動恢復",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0e0e11",
+  "theme_color": "#0e0e11",
+  "lang": "zh-Hant",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

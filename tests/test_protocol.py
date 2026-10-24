@@ -234,7 +234,7 @@ async def test_receiver_disconnect_reports_failed_transfer(tmp_path):
         desktop = await client.ws_connect('/ws/desktop')
         await desktop.send_json({'type':'desktop_hello', 'desktop_id':did, 'secret':secret, 'enroll_key':'key'})
         await desktop.receive_json(timeout=3)
-        app['hub'].db.execute('INSERT INTO mobiles VALUES (?,?,?,?,?)',
+        app['hub'].db.execute('INSERT INTO mobiles (id,desktop_id,token_hash,name,created) VALUES (?,?,?,?,?)',
                              (secrets.token_hex(16), did, digest(token), 'Phone', now_iso()))
         app['hub'].db.commit()
         mobile = await client.ws_connect('/ws/mobile', headers={'Cookie': 'aureo_session=' + token})

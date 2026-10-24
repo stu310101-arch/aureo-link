@@ -9,6 +9,7 @@ on:
       - 'server/**'
       - 'tests/**'
       - 'pwa/**'
+      - 'BUILD_PWA.py'
       - 'BUILD_WINDOWS.cmd'
       - 'BUILD_INSTALLER.cmd'
       - 'FETCH_INSTALLER_TOOL.py'
@@ -26,9 +27,12 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install -r requirements-dev.txt "pyinstaller>=6,<7"
+      - run: python BUILD_PWA.py
       - run: python -m pytest -q
       - run: node --check pwa/app.js
       - run: node tests/test_pwa.cjs
+      - run: node tests/test_mobile_connection.cjs
+      - run: node tests/test_scanner.cjs
       - run: python FETCH_TUNNEL.py
       - run: python PREPARE_LICENSES.py
       - run: python FETCH_INSTALLER_TOOL.py

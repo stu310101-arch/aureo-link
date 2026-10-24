@@ -25,6 +25,7 @@ RESOURCE_ROOT = Path(sys._MEIPASS) if getattr(sys, 'frozen', False) else Path(__
 if str(RESOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(RESOURCE_ROOT))
 from desktop.free_mode import FreeRelay
+from server.directory_client import PHONE_ENTRY
 
 APP = "Amos電腦手機連結器"
 BG = "#0E0E11"
@@ -107,6 +108,7 @@ class Desktop:
         self.devices = []
         self.qr_image = None
         self.qr_expiry = 0
+        self.qr_requested = False
         self.started_worker = None
         self.free_relay = None
         self.free_token = 0
@@ -295,11 +297,22 @@ class Desktop:
             self.transfer_percent.set(100 if success else 0)
 
     def lock_pairing(self):
+        self.qr_requested = False
         self.qr_expiry = 0
         self.qr_image = None
         self.qr_label.configure(image='', text='已配對\n\nQR CODE 已停止')
         self.pin_var.set('配對碼  已停用')
-        self.countdown_var.set('移除目前裝置後，可重新配對')
+        self.countdown_var.set('手機 App 重開會恢復連線；移除裝置後可重新配對')
+
+    def request_qr(self):
+        if self.qr_requested or self.devices or self.pairing_pending or not self.online:
+            return
+        self.qr_requested = True
+        self.qr_expiry = 0
+        self.qr_label.configure(image='', text='正在準備\n手機連線碼')
+        self.countdown_var.set('正在準備手機配對，請稍候…')
+        if not self.send({'type': 'new_qr'}):
+            self.qr_requested = False
 
     def toggle_clipboard(self):
         self.config['clipboard_sync'] = self.clipboard_enabled.get()
@@ -488,11 +501,11 @@ class Desktop:
                         continue
                     if event['type'] == 'free_ready':
                         self.public_url = event['public_url']
-                        self.public_url_var.set(self.public_url)
+                        self.public_url_var.set(PHONE_ENTRY)
                         self.server_var.set(event['server_url'])
                         self.enroll_var.set(event['enroll_key'])
                         self.connect()
-                        self.show_chat('系統', '免費連線已就緒。請用 iPhone 掃描 QR Code。\n關閉程式後通道會停止，下次啟動請重新掃碼。', save=False)
+                        self.show_chat('系統', '免費通道已就緒。請開啟固定手機 App，使用 App 內相機或 8 位數連線碼。\n已配對的手機重新開啟 App 後會恢復連線。', save=False)
                     elif event['type'] == 'free_error':
                         self.online = False
                         self.qr_expiry = 0
@@ -513,9 +526,10 @@ class Desktop:
     def handle(self, event):
         typ = event.get("type")
         if typ == "desktop_welcome":
+            self.qr_requested = False
             if self.config.get('mode') != 'free':
                 self.public_url = self.server_var.get().replace('wss://', 'https://', 1).replace('ws://', 'http://', 1).split('/ws/desktop')[0]
-                self.public_url_var.set(self.public_url)
+                self.public_url_var.set(PHONE_ENTRY)
             self.online = True
             self.status_var.set("● 已連線 / 可傳輸")
             self.status.configure(fg=GREEN)
@@ -525,22 +539,24 @@ class Desktop:
             if self.devices:
                 self.lock_pairing()
             else:
-                self.send({"type": "new_qr"})
+                self.request_qr()
             self.show_chat("系統", "伺服器連線成功，已準備接受配對。", save=False)
         elif typ == "qr":
+            self.qr_requested = False
             if self.devices or self.pairing_pending:
                 return
             url = event.get("url", "")
             if not url.startswith(("https://", "http://")):
                 return
-            self.public_url = url.split('/?pair=')[0].rstrip('/')
-            self.public_url_var.set(self.public_url)
+            self.public_url = event.get('relay_url') or url.split('/?pair=')[0].rstrip('/')
+            self.public_url_var.set(PHONE_ENTRY)
             img = qrcode.make(url).convert("RGB").resize((188, 188), Image.Resampling.NEAREST)
             self.qr_image = ImageTk.PhotoImage(img)
             self.qr_label.configure(image=self.qr_image, text="")
             self.qr_expiry = time.monotonic() + int(event.get("ttl", 90))
-            self.pin_var.set("配對碼  " + str(event.get("code", "—")))
+            self.pin_var.set("配對碼  " + str(event.get("code", "—")) if not event.get("portable") or event.get("directory_ready") else "配對碼服務喚醒中，請掃描 QR")
         elif typ == "pair_request":
+            self.qr_requested = False
             self.pairing_pending = True
             self.qr_expiry = 0
             self.qr_label.configure(image='', text='等待配對確認')
@@ -550,7 +566,7 @@ class Desktop:
                        "approve": approved})
             self.pairing_pending = False
             if not approved:
-                self.send({"type": "new_qr"})
+                self.request_qr()
             if approved:
                 self.show_chat("系統", f"已批准 {name} 的配對要求。")
         elif typ in ("devices", "pair_locked"):
@@ -561,10 +577,11 @@ class Desktop:
                 self.lock_pairing()
             elif had_devices:
                 self.clipboard_was_ready = False
-                self.send({'type': 'new_qr'})
+                self.request_qr()
         elif typ == 'pair_waiting':
-            self.countdown_var.set('正在等待目前的配對要求完成')
+            self.countdown_var.set(event.get('message') or '正在等待目前的配對要求完成')
         elif typ == "disconnected":
+            self.qr_requested = False
             self.online = False
             self.status_var.set("● 已離線 / 自動重連中")
             self.status.configure(fg=MUTED)
@@ -712,13 +729,13 @@ class Desktop:
 
     def open_mobile(self):
         if self.public_url.startswith(('https://', 'http://')):
-            webbrowser.open(self.public_url)
+            webbrowser.open(PHONE_ENTRY)
 
     def copy_mobile(self):
         if self.public_url:
             self.root.clipboard_clear()
-            self.root.clipboard_append(self.public_url)
-            self.last_clipboard = self.public_url
+            self.root.clipboard_append(PHONE_ENTRY)
+            self.last_clipboard = PHONE_ENTRY
             self.show_chat('系統', '已複製目前手機 PWA 網址。', save=False)
 
     def choose_folder(self):
@@ -836,13 +853,14 @@ class Desktop:
                 path.unlink(missing_ok=True)
 
     def countdown(self):
-        if self.online and not self.devices and not self.pairing_pending:
+        if self.online and not self.devices and not self.pairing_pending and not self.qr_requested:
             seconds = max(0, int(self.qr_expiry - time.monotonic()))
             if seconds <= 20:
                 # Server issues a new QR; no QR code is accepted after TTL.
                 if seconds == 20 or seconds == 0:
-                    self.send({"type": "new_qr"})
-            self.countdown_var.set(f"一次性配對碼 · {seconds} 秒後更新")
+                    self.request_qr()
+            if not self.qr_requested:
+                self.countdown_var.set(f"一次性配對碼 · {seconds} 秒後更新")
         self.root.after(1000, self.countdown)
 
     def on_close(self):

@@ -21,3 +21,5 @@ Traditional Chinese wizard messages retain their authors' attribution in
 installer/ChineseTraditional.isl. Pinned source:
 https://raw.githubusercontent.com/jrsoftware/issrc/468f9964a00f5fed0f816d70d1a218863474b010/Files/Languages/ChineseTraditional.isl
 SHA256: 031684fc769259291fd563338b5abe20b7753c88ab5a2976b83a80788deb8455
+
+jsQR 1.4.0 — Copyright (c) 2017 Cosmo Wolfe. MIT License. Bundled QR decoder: pwa/vendor/jsQR.js; license: pwa/vendor/LICENSE-jsQR.txt. Source: https://github.com/cozmo/jsQR

@@ -17,9 +17,10 @@ import sqlite3
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urlencode
 
 from aiohttp import WSMsgType, web
+from server.directory_client import PHONE_ENTRY
 
 ROOT = Path(__file__).resolve().parent.parent
 PWA = ROOT / "pwa"
@@ -73,6 +74,11 @@ class Hub:
           CREATE UNIQUE INDEX IF NOT EXISTS idx_one_mobile_per_desktop ON mobiles(desktop_id);
         """)
         self.db.commit()
+        if 'portable' not in {r[1] for r in self.db.execute('PRAGMA table_info(mobiles)')}:
+            self.db.execute('ALTER TABLE mobiles ADD COLUMN portable INTEGER NOT NULL DEFAULT 0')
+            self.db.commit()
+        self.publisher = None
+        self.pwa_origin = 'https://stu310101-arch.github.io'
         self.desktops: dict[str, web.WebSocketResponse] = {}
         self.mobile_sockets: dict[str, set[web.WebSocketResponse]] = {}
         self.qrs: dict[str, dict] = {}
@@ -90,12 +96,16 @@ class Hub:
         # cannot send credentialed cross-site scripts, but still need auth.
         if origin:
             source = urlsplit(origin)
-            return (source.scheme, source.netloc) == (allowed.scheme, allowed.netloc)
+            return origin == self.pwa_origin or (source.scheme, source.netloc) == (allowed.scheme, allowed.netloc)
         return True
 
     def mobile_auth(self, request: web.Request):
-        token = request.cookies.get("aureo_session", "")
-        if len(token) != 64:
+        authorization = request.headers.get('Authorization', '')
+        token = authorization[7:] if authorization.startswith('Bearer ') else request.cookies.get("aureo_session", "")
+        return self.token_auth(token)
+
+    def token_auth(self, token):
+        if not isinstance(token, str) or not re.fullmatch(r'[a-f0-9]{64}', token):
             return None
         return self.db.execute(
             "SELECT m.id,m.desktop_id,m.name,d.name AS desktop_name FROM mobiles m "
@@ -232,6 +242,13 @@ class Hub:
 
 
 async def index(request: web.Request):
+    hub = request.app['hub']
+    if hub.publisher:
+        details = {'relay': hub.public_url, 'locator': hub.publisher.locator}
+        token = request.query.get('pair', '')
+        if re.fullmatch(r'[a-zA-Z0-9_-]{48}', token):
+            details['pair'] = token
+        raise web.HTTPFound(PHONE_ENTRY + '#' + urlencode(details))
     res = web.FileResponse(PWA / "index.html")
     res.headers["Cache-Control"] = "no-store"
     return res
@@ -283,7 +300,8 @@ async def claim(request: web.Request):
     request_id, proof = secrets.token_urlsafe(24), secrets.token_urlsafe(24)
     name = short_name(req.get("name") or "iPhone / 行動裝置", 40)
     hub.pending[request_id] = {"desktop_id": code["desktop_id"], "proof": proof,
-                               "name": name, "expires": time.monotonic() + 180, "state": "waiting"}
+                               "name": name, "expires": time.monotonic() + 180, "state": "waiting",
+                               "portable": request.headers.get('Origin') == hub.pwa_origin}
     await hub.tell(hub.desktops[code["desktop_id"]],
                    {"type": "pair_request", "request_id": request_id, "name": name})
     return web.json_response({"request_id": request_id, "proof": proof, "status": "waiting"},
@@ -293,17 +311,27 @@ async def claim(request: web.Request):
 async def claim_status(request: web.Request):
     hub: Hub = request.app["hub"]
     hub.purge_expired()
-    rid = request.query.get("request_id", "")
-    proof = request.query.get("proof", "")
+    values = await request.json() if request.method == 'POST' else request.query
+    if not isinstance(values, dict) and request.method == 'POST':
+        raise web.HTTPBadRequest()
+    rid = values.get("request_id", "")
+    proof = values.get("proof", "")
     pending = hub.pending.get(rid)
-    if not pending or not secrets.compare_digest(pending["proof"], proof):
+    if not pending or not isinstance(proof, str) or not secrets.compare_digest(pending["proof"], proof):
         raise web.HTTPGone(text="Pairing expired")
+    if pending.get('portable') and request.headers.get('Origin') != hub.pwa_origin:
+        raise web.HTTPForbidden()
     if pending["state"] == "waiting":
         return web.json_response({"status": "waiting"}, headers={"Cache-Control": "no-store"})
     hub.pending.pop(rid, None)
     if pending["state"] != "approved":
         return web.json_response({"status": "denied"}, headers={"Cache-Control": "no-store"})
-    response = web.json_response({"status": "approved"}, headers={"Cache-Control": "no-store"})
+    data = {"status": "approved"}
+    if pending.get('portable'):
+        data['token'] = pending['token']
+        if hub.publisher:
+            data.update(hub.publisher.credentials())
+    response = web.json_response(data, headers={"Cache-Control": "no-store"})
     response.set_cookie("aureo_session", pending["token"], httponly=True,
                         secure=hub.public_url.startswith("https://"),
                         samesite="Strict", path="/", max_age=3600 * 24 * 365)
@@ -399,10 +427,22 @@ async def desktop_socket(request: web.Request):
                 while pin in hub.qrs:
                     pin = f"{secrets.randbelow(90000000) + 10000000:08d}"
                 item = {"desktop_id": identifier, "expires": time.monotonic() + QR_TTL}
+                directory_ready = False
+                if hub.publisher:
+                    await hub.tell(ws, {'type': 'pair_waiting', 'message': '正在準備固定 PWA 配對服務，首次喚醒可能需要約一分鐘'})
+                    for _ in range(5):
+                        result = await hub.publisher.publish(pin)
+                        if result != 'collision':
+                            directory_ready = result is True
+                            break
+                        pin = f"{secrets.randbelow(90000000) + 10000000:08d}"
+                    item['expires'] = time.monotonic() + QR_TTL
                 hub.qrs[code] = item
                 hub.qrs[pin] = item
-                await hub.tell(ws, {"type": "qr", "url": f"{hub.public_url}/?pair={code}",
-                                    "code": pin, "ttl": QR_TTL})
+                qr_url = hub.publisher.pairing_url(code) if hub.publisher else f"{hub.public_url}/?pair={code}"
+                await hub.tell(ws, {"type": "qr", "url": qr_url, "relay_url": hub.public_url,
+                                    "code": pin, "ttl": QR_TTL, 'directory_ready': directory_ready,
+                                    'portable': bool(hub.publisher)})
             elif kind == "pair_decision":
                 request_id = p.get("request_id")
                 pending = hub.pending.get(request_id)
@@ -415,8 +455,8 @@ async def desktop_socket(request: web.Request):
                         continue
                     mobile_id = secrets.token_hex(16)
                     token = secrets.token_hex(32)
-                    hub.db.execute("INSERT INTO mobiles VALUES (?,?,?,?,?)",
-                                   (mobile_id, identifier, digest(token), pending["name"], now_iso()))
+                    hub.db.execute("INSERT INTO mobiles (id,desktop_id,token_hash,name,created,portable) VALUES (?,?,?,?,?,?)",
+                                   (mobile_id, identifier, digest(token), pending["name"], now_iso(), int(pending.get('portable', False))))
                     hub.db.commit()
                     pending["token"] = token
                     pending["state"] = "approved"
@@ -458,11 +498,22 @@ async def mobile_socket(request: web.Request):
     if not hub.origin_allowed(request):
         raise web.HTTPForbidden()
     auth = hub.mobile_auth(request)
-    if not auth:
-        raise web.HTTPUnauthorized()
-    mid, did = auth["id"], auth["desktop_id"]
     ws = web.WebSocketResponse(heartbeat=25, max_msg_size=135000)
+    # Legacy same-origin clients keep their cookie handshake. Fixed-origin PWAs
+    # send their token in the first WSS frame, never in a URL or access log.
+    if not auth and request.headers.get('Origin') != hub.pwa_origin:
+        raise web.HTTPUnauthorized()
     await ws.prepare(request)
+    if not auth:
+        try:
+            first = await ws.receive_json(timeout=10)
+            auth = hub.token_auth(first.get('token', '')) if isinstance(first, dict) and first.get('type') == 'mobile_hello' else None
+        except (asyncio.TimeoutError, ValueError, TypeError):
+            auth = None
+        if not auth:
+            await ws.close(code=4003, message=b'unauthorized')
+            return ws
+    mid, did = auth["id"], auth["desktop_id"]
     for previous in list(hub.mobile_sockets.get(mid, set())):
         await previous.close(code=4001, message=b'replaced')
     hub.mobile_sockets.setdefault(mid, set()).add(ws)
@@ -495,14 +546,25 @@ async def mobile_socket(request: web.Request):
 
 @web.middleware
 async def headers(request, handler):
-    response = await handler(request)
+    hub = request.app['hub']
+    origin = request.headers.get('Origin')
+    if request.path.startswith('/api/') and not hub.origin_allowed(request):
+        raise web.HTTPForbidden()
+    try:
+        response = web.Response(status=204) if request.method == 'OPTIONS' and hub.origin_allowed(request) else await handler(request)
+    except web.HTTPException as error:
+        response = error
+    if origin == hub.pwa_origin:
+        response.headers.update({'Access-Control-Allow-Origin': origin, 'Vary': 'Origin',
+                                 'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+                                 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'})
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "no-referrer"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Cache-Control"] = response.headers.get("Cache-Control", "no-store")
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; script-src 'self'; style-src 'self'; "
-        "img-src 'self' blob: data:; connect-src 'self' ws: wss:; "
+        "img-src 'self' blob: data:; connect-src 'self' https: ws: wss:; media-src 'self' blob:; "
         "object-src 'none'; frame-ancestors 'none'; base-uri 'self'"
     )
     return response
@@ -523,16 +585,19 @@ def create_app(*, db_path: Path | None = None, public_url: str | None = None,
     app.router.add_get("/api/me", current_user)
     app.router.add_post("/api/pair/claim", claim)
     app.router.add_get("/api/pair/status", claim_status)
+    app.router.add_post("/api/pair/status", claim_status)
     app.router.add_post("/api/logout", logout)
     app.router.add_get("/ws/desktop", desktop_socket)
     app.router.add_get("/ws/mobile", mobile_socket)
+    app.router.add_route('OPTIONS', '/api/{tail:.*}', current_user)
     def static_handler(fname):
         async def serve_file(request):
             return web.FileResponse(PWA / fname)
         return serve_file
-    for path in ("app.css", "app.js", "sw.js", "manifest.webmanifest"):
+    for path in ("app.css", "app.js", "connection.js", "scanner.js", "sw.js", "manifest.webmanifest"):
         app.router.add_get("/" + path, static_handler(path))
     app.router.add_static("/icons/", PWA / "icons", show_index=False)
+    app.router.add_static('/vendor/', PWA / 'vendor', show_index=False)
     async def cleanup(app):
         app["hub"].close()
     app.on_cleanup.append(cleanup)

@@ -47,3 +47,19 @@ async def test_directory_forgetful_restart_can_be_repopulated_without_account():
             assert (await client.get('/v1/pins/12345678')).status==404
             assert (await client.post('/v1/announce',json=data)).status==200
             assert (await client.get('/v1/pins/12345678')).status==200
+
+@pytest.mark.asyncio
+async def test_heartbeat_reads_current_pin_after_waiting_for_registration_lock(tmp_path):
+    import asyncio
+    from types import SimpleNamespace
+    from server.directory_client import Publisher
+    hub=SimpleNamespace(public_url='https://test-heartbeat.trycloudflare.com',qrs={},purge_expired=lambda:None)
+    async with TestClient(TestServer(create_app())) as client:
+        publisher=Publisher(tmp_path,hub,url=str(client.make_url('')).rstrip('/'))
+        await publisher.lock.acquire()
+        task=asyncio.create_task(publisher.publish(heartbeat=True))
+        await asyncio.sleep(0)
+        hub.qrs['12345678']={'expires':time.monotonic()+90}
+        publisher.lock.release()
+        assert await task is True
+        assert (await client.get('/v1/pins/12345678')).status==200

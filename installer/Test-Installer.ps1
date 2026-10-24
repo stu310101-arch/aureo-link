@@ -24,8 +24,8 @@ function Install-TestSetup([string]$Path) {
 $oldSetup = Join-Path $env:RUNNER_TEMP 'Amos-previous-setup.exe'
 $previousAvailable = $true
 try {
-    Invoke-WebRequest -Uri 'https://github.com/stu310101-arch/aureo-link/releases/download/v2.0.1/AmosLink-Setup.exe' -OutFile $oldSetup
-    if ((Get-FileHash -LiteralPath $oldSetup -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'b147ff4e0b7de878eee72a9ad3017fca2a8f2aff3f9836f353a0e90c899fff90') { throw 'Previous installer checksum mismatch' }
+    Invoke-WebRequest -Uri 'https://github.com/stu310101-arch/aureo-link/releases/download/v2.0.2/AmosLink-Setup.exe' -OutFile $oldSetup
+    if ((Get-FileHash -LiteralPath $oldSetup -Algorithm SHA256).Hash.ToLowerInvariant() -ne '98361910ad24c3a16dbf799042395a29785b6b6e0b21e39f6ba0f38caed95180') { throw 'Previous installer checksum mismatch' }
 } catch {
     if ($_.Exception.Response.StatusCode.value__ -eq 404) {
         $previousAvailable = $false
@@ -33,7 +33,7 @@ try {
     } else { throw }
 }
 $uninstaller = Join-Path $targetPath 'unins000.exe'
-$icon = Join-Path $targetPath 'icons\AmosLink-v2.0.2.ico'
+$icon = Join-Path $targetPath 'icons\AmosLink-v3.0.0.ico'
 try {
     $oldIcon = $null
     if ($previousAvailable) {
@@ -55,10 +55,10 @@ try {
         if ($oldIcon -and $shortcut.IconLocation -eq $oldIcon) { throw 'Upgrade reused old icon cache key' }
     }
     $registration = Get-ItemProperty -LiteralPath $key
-    if ($registration.DisplayVersion -ne '2.0.2') { throw 'Installer version mismatch' }
-    if ((Get-Item -LiteralPath $exe).VersionInfo.ProductVersion -notlike '2.0.2*') { throw 'Executable version mismatch' }
+    if ($registration.DisplayVersion -ne '3.0.0') { throw 'Installer version mismatch' }
+    if ((Get-Item -LiteralPath $exe).VersionInfo.ProductVersion -notlike '3.0.0*') { throw 'Executable version mismatch' }
     Write-Output ('Previous version installed in test: ' + $previousAvailable)
-    Write-Output 'PASS: upgrade from 2.0.1; correct new desktop and Start menu ICO paths; artwork SHA-256; version'
+    Write-Output 'PASS: upgrade from 2.0.2; correct new desktop and Start menu ICO paths; artwork SHA-256; version'
 
 } finally {
     if (Test-Path -LiteralPath $uninstaller) {

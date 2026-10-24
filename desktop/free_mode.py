@@ -13,6 +13,7 @@ import threading
 
 from aiohttp import web
 from server.app import create_app
+from server.directory_client import Publisher
 
 
 class FreeRelay:
@@ -51,13 +52,14 @@ class FreeRelay:
         enroll = secrets.token_urlsafe(48)
         app = create_app(db_path=self.home / 'free-relay.sqlite3',
                          public_url='http://localhost:8787', enroll_key=enroll)
-        # A new Quick Tunnel has a new cookie origin; the previous session's
-        # phone must pair again rather than occupying the only device slot.
-        app['hub'].db.execute('DELETE FROM mobiles')
+        # Only migrate legacy tunnel-cookie devices. Fixed-PWA credentials and
+        # their one-device slot survive process restarts and tunnel changes.
+        app['hub'].db.execute('DELETE FROM mobiles WHERE portable=0')
         app['hub'].db.commit()
         runner = web.AppRunner(app, access_log=None)
         process = None
         log_task = None
+        directory_task = None
         await runner.setup()
         try:
             site = web.TCPSite(runner, '127.0.0.1', 0)
@@ -101,6 +103,8 @@ class FreeRelay:
                 await asyncio.sleep(0.5)
             else:
                 raise RuntimeError('建立通道逾時，請確認網路連線後再試')
+            app['hub'].publisher = Publisher(self.home, app['hub'])
+            directory_task = asyncio.create_task(app['hub'].publisher.run())
             self.emit('free_ready', server_url=f'ws://127.0.0.1:{port}/ws/desktop',
                       enroll_key=enroll, public_url=url)
             while not self.stopping.is_set():
@@ -108,6 +112,9 @@ class FreeRelay:
                     raise RuntimeError('免費通道已中斷，請到設定重新啟動免費模式')
                 await asyncio.sleep(0.5)
         finally:
+            if directory_task:
+                directory_task.cancel()
+                await asyncio.gather(directory_task, return_exceptions=True)
             if process and process.returncode is None:
                 process.terminate()
                 try:

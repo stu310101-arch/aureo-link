@@ -8,34 +8,36 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Amos電腦手機連結器">
   <meta name="description" content="Amos電腦手機連結器 · 私密的跨裝置文字、連結與檔案傳輸空間">
-  <link rel="icon" type="image/png" href="/icons/icon-192.png">
-  <link rel="apple-touch-icon" href="/icons/icon-192.png">
-  <link rel="manifest" href="/manifest.webmanifest">
-  <link rel="stylesheet" href="/app.css">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="app.css">
   <title>Amos電腦手機連結器 — 共享工作台</title>
 </head>
 <body>
  <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
  <div class="page">
   <header class="header">
-   <div class="brand"><img class="mark" src="/icons/icon-192.png" width="48" height="48" alt=""><div><div class="brand-name">Amos <span>電腦手機連結器</span></div><div class="brand-sub">PRIVATE DEVICE WORKSPACE</div></div></div>
+   <div class="brand"><img class="mark" src="icons/icon-192.png" width="48" height="48" alt=""><div><div class="brand-name">Amos <span>電腦手機連結器</span></div><div class="brand-sub">PRIVATE DEVICE WORKSPACE</div></div></div>
    <div class="head-side"><span class="pill" id="connectionPill"><span class="signal"></span> 檢查連線</span></div>
   </header>
 
   <section class="install-note" id="installNote" hidden>
-   <div><strong>Amos電腦手機連結器 使用提示</strong><p>免費模式每次重開電腦程式後，請重新掃描 QR Code。固定網址的服務可在 Safari 分享 <span aria-label="分享">▣</span> →「加入主畫面」。</p></div>
+   <div><strong>Amos電腦手機連結器 使用提示</strong><p>在 Safari 分享 <span aria-label="分享">▣</span> →「加入主畫面」，只需安裝一次。重開 App 會恢復已記住的配對；新增連線可直接使用 App 內相機或 8 位數連線碼。</p></div>
    <button class="close-note" id="closeInstall" aria-label="關閉提示">×</button>
   </section>
 
   <section id="pairView" class="pair-view">
-   <div class="eyebrow">01 / INITIAL PAIRING</div>
-   <div class="hero-icon"><img src="/icons/icon-192.png" width="112" height="112" alt="Amos電腦手機連結器"></div>
+   <div class="eyebrow">01 / YOUR PERMANENT CONNECTION</div>
+   <div class="hero-icon"><img src="icons/icon-192.png" width="112" height="112" alt="Amos電腦手機連結器"></div>
    <h1>讓裝置，<em>自然連結。</em></h1>
    <p class="intro">電腦開啟 Amos電腦手機連結器 後，掃描畫面上的 QR Code，或輸入電腦顯示的 8 位數配對碼。</p>
    <div id="pairWaiting" class="pair-waiting" hidden><div class="loader"></div><strong id="pairWaitingTitle">等待電腦確認</strong><p>請在電腦視窗按下「允許」，即可開啟專屬傳送通道。</p></div>
+   <div class="scan-actions"><button id="scanBtn" class="scan-button">開啟相機掃描 QR Code</button><p>就在這個 App 掃描電腦畫面，掃完直接連接。</p></div>
+   <section id="scanner" class="scanner" hidden aria-label="QR Code 掃描器"><div class="scanner-head"><strong>掃描電腦 QR Code</strong><button id="closeScanner" type="button">關閉相機</button></div><video id="scanVideo" playsinline muted></video><p id="scanError" role="status"></p></section>
    <form id="pairForm" class="pin-box">
     <label for="pin">沒有 QR Code？輸入電腦上的配對碼</label>
-    <div class="pin-form"><input id="pin" inputmode="numeric" autocomplete="one-time-code" maxlength="8" pattern="[0-9]{8}" placeholder="0000 0000" aria-label="8 位數配對碼" required><button type="submit">立即配對 ↗</button></div>
+    <div class="pin-form"><input id="pin" inputmode="numeric" autocomplete="one-time-code" maxlength="8" pattern="[0-9]{8}" placeholder="0000 0000" aria-label="8 位數配對碼" required><button id="pairSubmit" type="submit">立即配對 ↗</button></div>
    </form>
    <p class="helper" id="pairError" role="status"></p>
    <div class="trust-items"><div>◎ <span>裝置配對</span></div><div>↗ <span>即時傳輸</span></div><div>◇ <span>專屬工作空間</span></div></div>
@@ -50,6 +52,7 @@
     <div class="eyebrow">02 / YOUR SPACE</div>
     <div class="space-selected">◈ <span>即時共享空間</span><span class="space-arrow">↗</span></div>
     <div class="side-info">只要電腦程式保持開啟，就能用手機即時傳送文字、連結、照片和檔案。<br><br>傳輸經過你設定的中繼伺服器，伺服器不保留聊天內容。</div>
+    <button class="unpair" id="reconnectBtn">重新連線</button>
     <button class="unpair" id="unpairBtn">取消這台手機的配對</button>
    </aside>
    <main class="chat-panel">
@@ -75,6 +78,9 @@
   <footer class="footer"><span>© Amos電腦手機連結器 · MADE FOR SEAMLESS FLOW</span><span>WINDOWS × IOS PWA</span></footer>
  </div>
  <div class="toast" id="toast" role="status" aria-live="polite"></div>
- <script src="/app.js" defer></script>
+ <script src="vendor/jsQR.js" defer></script>
+ <script src="connection.js" defer></script>
+ <script src="scanner.js" defer></script>
+ <script src="app.js" defer></script>
 </body>
 </html>

@@ -1,46 +1,34 @@
 # Amos電腦手機連結器 — Windows × iPhone PWA 即時共享工作台
 
 > Windows 安裝版、可攜版與完整原始碼。Amos 工具系列：統一霧黑、香檳金圖示與繁體中文介面。
-> Windows EXE + iOS 主畫面 PWA + HTTPS/WSS 中繼伺服器。**非端對端加密**，自架中繼伺服器可存取即時傳輸內容。
+> Windows EXE + 固定 iOS 主畫面 PWA + 免費配對目錄 + HTTPS/WSS 通道。**非端對端加密**，自架中繼伺服器可存取即時傳輸內容。
 
 <img src="branding/amos-link.png" width="128" alt="Amos電腦手機連結器圖示">
 
 ## 下載與開始使用
 
-**[下載 Windows 安裝版](https://github.com/stu310101-arch/aureo-link/releases/latest/download/AmosLink-Setup.exe)** · **[手機入口](https://stu310101-arch.github.io/aureo-link/phone/)** · **[下載頁](https://stu310101-arch.github.io/aureo-link/)** · [完整 Release](https://github.com/stu310101-arch/aureo-link/releases/latest)
+**[下載 Windows 安裝精靈](https://github.com/stu310101-arch/aureo-link/releases/latest/download/AmosLink-Setup.exe)** · **[安裝／開啟固定手機 App](https://stu310101-arch.github.io/aureo-link/phone/)** · [最新 Release](https://github.com/stu310101-arch/aureo-link/releases/latest)
 
-1. 下載並開啟 `AmosLink-Setup.exe`，依繁體中文安裝精靈完成安裝；「建立桌面捷徑」預設勾選。
-2. 從桌面或開始功能表開啟 **Amos電腦手機連結器**，等待免費 HTTPS 通道與 QR Code 出現。
-3. 用 iPhone 相機掃碼，或從「手機入口」貼上電腦顯示的連線網址。
-4. 在電腦確認配對，即可互傳。電腦左側也能開啟或複製目前手機 PWA 網址。
+1. Windows 安裝並開啟最新版，保留桌面捷徑，等待免費通道與配對碼。
+2. iPhone Safari 開啟固定手機 App → 分享 →「加入主畫面」，只需安裝一次。
+3. 在手機 App 內開啟相機掃描電腦 QR Code，或輸入 8 位數配對碼；在電腦確認允許。
+4. 後續直接開啟同一個 App，即使手機清掉後台、電腦程式重啟或臨時網址變動，仍會使用保存的憑證恢復連線。
 
-安裝到目前使用者的 `%LOCALAPPDATA%\Programs\AureoLink`，不需系統管理員權限；可從 Windows「設定 → 應用程式」解除安裝。解除安裝會移除程式與捷徑，保留設定、歷史紀錄及收到的檔案。
+**2.x 升級者：**若舊 App 是從臨時 `trycloudflare.com` 網址加入主畫面，請改由固定網址加入主畫面一次並重新配對。舊網域的 App 無法跨網域更新。新 App 的憑證保存在固定來源，電腦不再因重啟清除這類配對。
 
-安裝後無須另裝 Python 或附帶 tools 資料夾。免費模式由**每位使用者自己的電腦**提供服務；需保持該電腦開機、連網並開著程式。固定手機入口協助開啟使用者的連線，實際 PWA 在該電腦的臨時 HTTPS 網址運作。程式重啟後請重新掃碼。
+## v3.0.0 功能
 
-## 具備功能
+- 固定 GitHub Pages PWA，App 內相機 QR 掃描、8 位數連線、重開恢復。
+- 免費 Render 配對服務對應短期碼與電腦目前網址；不接收聊天或檔案。電腦定期更新地址，服務重啟後可自行恢復登記。
+- 手機保存配對憑證；跨來源 HTTP 使用 Bearer 認證，WSS 憑證放在第一個訊息內，避免放進網址。換網址時驗證配對專用 HMAC 位址證明。
+- 一台電腦只配對一台手機，成功後停止建立 QR；可撤銷配對。
+- 文字、網址、照片及檔案互傳，單檔 20 MiB，雙方顯示傳輸進度。
+- Windows 文字剪貼簿自動同步；iPhone 仍需點按或貼上操作，無法提供原生背景 Universal Clipboard。
+- 安裝精靈預設桌面捷徑，沿用獨立版本 ICO。解除安裝保留個人資料。
 
-- **2.0.2 安裝版**：繁體中文安裝精靈、預設勾選桌面捷徑、開始功能表捷徑，以及 Windows 解除安裝登錄。
+使用者自己的電腦需保持開機、連網並開著程式。免費配對服務可能冷啟動（約一分鐘）或暫停；短暫離線不會刪除配對。清除網站／App 資料或更換手機後，需在電腦移除舊裝置再配對。傳輸沒有端對端加密；不提供離線代收。
 
-- **第二版更新**：一次只允許一個已配對手機，成功後停止核發與更新 QR/PIN，移除後才能再配對。既有多裝置資料會保留最近一台。
-- 手機與桌面顯示傳送／接收百分比、等待中繼確認、送出、接收完成及中斷提示。
-- 雙向**文字與網址剪貼簿**：Windows 配對在線時自動同步新複製的文字；手機送出的文字自動寫入 Windows 剪貼簿，可直接 Ctrl+V。iPhone 必須在頁面點「手機複製 → 電腦可貼上」（或長按專用欄位貼上）送出；收到電腦內容後點「複製電腦內容」。PWA 無法提供 iOS 原生背景 Universal Clipboard，也不會背景讀取其他 App 的剪貼簿。圖片與檔案仍使用傳檔功能。
-
-- **免費模式（預設）**：Windows EXE 內建本機中繼與官方 cloudflared，建立免費 HTTPS 通道。無須自備伺服器、網域或帳號。啟動 `AureoLink.exe`，等待 QR Code 出現，再由 iPhone 掃碼並在電腦確認。
-- 免費模式需電腦保持開機與連網，關閉程式即停止通道；每次啟動網址改變，手機需要重新掃碼。Cloudflare Quick Tunnel 為測試用途、無可用性保證，不等同固定網址的長期託管。手機加入主畫面後的網址也會隨通道過期。
-- EXE 已內嵌 cloudflared，來自 Cloudflare 官方 GitHub release，建置時比對官方 SHA256。從原始碼執行時，`FETCH_TUNNEL.py` 會下載並驗證至 `tools/`。
-- 原有自架伺服器模式保留，可在「設定」填入自訂 WSS 網址和註冊密碼。
-
-- Windows 開啟桌面程式 → 伺服器核發每 **90 秒失效** 的動態 QR Code 和 **8 位數配對碼**。
-- 手機掃碼或輸入配對碼 → 電腦視窗顯示授權詢問 → **只有電腦同意才建立信任裝置**。
-- 伺服器 SQLite 保存配對狀態，手機保存 **HttpOnly / SameSite Cookie**；iOS 17.2+ 安裝 PWA 會複製 Safari 的 Cookie，幫助做到「掃一次、下次開啟直接連線」。
-- 任一方在連線時傳送文字、網址、圖片或檔案；檔案使用 48 KiB WebSocket 分段，**單檔上限 20 MiB**。
-- Windows 收到檔案時儲存在使用者指定資料夾，不會覆蓋同名檔案，禁止路徑穿越，也不會自動執行收到的檔案。
-- Windows 支援檔案挑選、貼上剪貼簿文字、**Windows 檔案總管複製的檔案**、剪貼簿截圖（手動點「貼上傳送」）。
-- iOS PWA 支援挑選圖片/檔案、輸入/貼上文字、圖片預覽、下載及呼叫分享表單保存到「檔案」；能顯示已連線 / 離線。
-- 斷線自動重連、已信任裝置清單和撤銷配對。
-- 手機本機保留最近 120 筆文字或檔案**名稱紀錄**；桌面本機保留最近 160 筆訊息。**檔案資料本身不跨重啟保存於網頁**。
-- 中繼服務**不留存聊天訊息與檔案**，只在已驗證的線上連線間轉送；無離線代收。
+完整教學見 [QUICK_START.txt](QUICK_START.txt)。固定 PWA 來源在 `pwa/`，執行 `python BUILD_PWA.py` 同步至 `docs/phone/`。Render 服務使用 `pairing-service` 分支，`python -m directory.app` 啟動；無須資料庫或付費磁碟。
 
 ## 架構
 

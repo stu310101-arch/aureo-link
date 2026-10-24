@@ -33,6 +33,9 @@ async def test_free_relay_starts_authenticates_and_stops(tmp_path, monkeypatch):
         return process
 
     monkeypatch.setattr(asyncio, 'create_subprocess_exec', spawn)
+    async def publish(self, pin=None, ttl=90, **kwargs):
+        return True
+    monkeypatch.setattr('server.directory_client.Publisher.publish', publish)
     executable = tmp_path / 'cloudflared.exe'
     executable.touch()
     events = queue.Queue()
@@ -58,7 +61,11 @@ async def test_free_relay_starts_authenticates_and_stops(tmp_path, monkeypatch):
             assert (await ws.receive_json(timeout=3))['type'] == 'desktop_welcome'
             await ws.send_json({'type': 'new_qr'})
             qr = await ws.receive_json(timeout=3)
-            assert qr['url'].startswith('https://aureo-test.trycloudflare.com/?pair=')
+            assert qr['type']=='pair_waiting'
+            qr = await ws.receive_json(timeout=3)
+            assert qr['url'].startswith('https://stu310101-arch.github.io/aureo-link/phone/#relay=')
+            assert qr['relay_url']=='https://aureo-test.trycloudflare.com'
+            assert qr['directory_ready'] is True
             await ws.close()
     finally:
         relay.stop()

@@ -3,8 +3,11 @@
   const $ = id => document.getElementById(id);
   const MAX_FILE = 20 * 1024 * 1024;
   const CHUNK = 48 * 1024;
-  const wsScheme = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const endpoint = `${wsScheme}//${location.host}/ws/mobile`;
+  const connection = window.AmosConnection;
+  const launchLink = location.href;
+  let pairBusy = false;
+  let lookingUp = false;
+  let restoring = false;
   let ws = null;
   let paired = false;
   let peerOnline = false;
@@ -20,7 +23,7 @@
   let currentPin = new URLSearchParams(location.search).get('pair') || '';
   let historyKey = '';
   let savingHistory = false;
-  history.replaceState({}, '', '/'); // never keep one-time pairing token in address bar
+  history.replaceState({}, '', location.pathname); // never keep one-time pairing token in address bar
 
   function toast(text) {
     const node = $('toast');
@@ -49,6 +52,8 @@
     paired = false;
     $('pairView').hidden = false;
     $('roomView').hidden = true;
+    $('pairWaiting').hidden = true;
+    $('pairForm').hidden = false;
     setStatus('尚未配對');
     remoteClipboard = '';
     $('receiveClipboardBtn').disabled = true;
@@ -70,36 +75,57 @@
     const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
     $('installNote').hidden = !isIOS || standalone || sessionStorage.getItem('hide_install') === 'yes';
   }
-  async function getMe() {
+  async function getMe() { return connection.me(); }
+  async function acceptLink(value) {
+    if(lookingUp||pairBusy)return;
+    lookingUp=true;
+    $('scanBtn').disabled=true;
     try {
-      const res = await fetch('/api/me', { cache: 'no-store', credentials: 'same-origin' });
-      return await res.json();
-    } catch (_) {
-      return null;
-    }
+      const entry = await connection.useQr(value);
+      if (ws) { const old=ws; ws=null; old.close(); }
+      if (entry.resumed) { showRoom(entry.user); connect(); toast('已恢復原本配對'); }
+      else if (entry.code) await claimPair(entry.code);
+      else throw new Error('QR Code 沒有配對資料，請重新產生。');
+    } catch (error) { $('pairError').textContent=error.message || '無法讀取配對 QR Code。'; }
+    finally{lookingUp=false;$('scanBtn').disabled=false;}
   }
   async function loadApp() {
+    if (restoring) return;
+    restoring=true;
     installGuide();
-    const me = await getMe();
-    if (me && me.paired) {
-      showRoom(me);
-      connect();
-    } else {
-      showPair();
-      if (currentPin && (/^[a-zA-Z0-9_\-]{48}$/.test(currentPin) || /^[0-9]{8}$/.test(currentPin))) {
-        claimPair(currentPin);
+    try {
+      if (location.hash.includes('relay=') || new URL(launchLink).hash.includes('relay=')) {
+        const incoming = window.__amosLaunchConsumed ? '' : launchLink;
+        window.__amosLaunchConsumed=true;
+        if (incoming) { await acceptLink(incoming); return; }
       }
-    }
+      setStatus('正在恢復連線...');
+      const me=await getMe();
+      if (me?.paired) { showRoom(me); connect(); }
+      else if (connection.saved && me === null) {
+        showRoom({desktop_id:connection.saved.locator,desktop_name:'已記住的 Windows 電腦'});
+        setStatus('電腦目前離線，配對已保留');
+        scheduleReconnect();
+      } else {
+        if (me && !me.paired) connection.forget();
+        showPair();
+        if (currentPin && (/^[a-zA-Z0-9_\-]{48}$/.test(currentPin) || /^[0-9]{8}$/.test(currentPin))) {
+          await claimPair(currentPin); currentPin='';
+        }
+      }
+    } finally { restoring=false; }
   }
   async function claimPair(code) {
+    if (pairBusy) return;
+    pairBusy=true;
     $('pairError').textContent = '';
     $('pairWaiting').hidden = false;
     $('pairForm').hidden = true;
     $('pairWaitingTitle').textContent = '正在請求電腦批准...';
     const phoneName = /iPad/.test(navigator.userAgent) ? 'iPad' : /iPhone/.test(navigator.userAgent) ? 'iPhone' : '行動裝置';
     try {
-      const res = await fetch('/api/pair/claim', {
-        method: 'POST', credentials: 'same-origin',
+      const res = await connection.request('/api/pair/claim', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code, name: phoneName }),
       });
@@ -108,11 +134,12 @@
       $('pairWaitingTitle').textContent = '等待電腦確認';
       for (let tries = 0; tries < 95; tries++) {
         await new Promise(resolve => setTimeout(resolve, 1800));
-        const statusRes = await fetch(`/api/pair/status?request_id=${encodeURIComponent(pair.request_id)}&proof=${encodeURIComponent(pair.proof)}`, { cache: 'no-store', credentials: 'same-origin' });
+        const statusRes = await connection.request('/api/pair/status', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({request_id:pair.request_id,proof:pair.proof})});
         if (!statusRes.ok) throw new Error('配對要求已過期，請重新掃描 QR Code。');
         const result = await statusRes.json();
         if (result.status === 'denied') throw new Error('電腦已拒絕配對。');
         if (result.status === 'approved') {
+          connection.approved(result);
           toast('配對成功，可以開始傳送');
           const me = await getMe();
           if (!me || !me.paired) throw new Error('無法讀取配對狀態，請重新開啟網頁。');
@@ -126,15 +153,17 @@
       $('pairError').textContent = err.message || '無法建立連線。';
       $('pairWaiting').hidden = true;
       $('pairForm').hidden = false;
-    }
+    } finally { pairBusy=false; }
   }
   function connect() {
     if (!paired || ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
     clearTimeout(retryTimer);
     setStatus('正在連線...');
-    try { ws = new WebSocket(endpoint); } catch (_) { scheduleReconnect(); return; }
-    ws.onopen = () => { retryDelay = 1500; setStatus('已連到伺服器'); };
+    try { ws = new WebSocket(connection.socketUrl()); } catch (_) { scheduleReconnect(); return; }
+    const socket=ws;
+    ws.onopen = () => { if(ws!==socket)return; connection.hello(socket); retryDelay = 1500; setStatus('已連到伺服器'); };
     ws.onmessage = async event => {
+      if(ws!==socket)return;
       let p;
       try { p = JSON.parse(event.data); } catch (_) { return; }
       switch (p.type) {
@@ -169,6 +198,7 @@
       }
     };
     ws.onclose = async event => {
+      if(ws!==socket)return;
       ws = null;
       setStatus('連線中斷');
       transfers.clear();
@@ -179,7 +209,7 @@
       if (event.code === 4001) { setStatus('已在另一個視窗連線'); return; }
       if (event.code === 4003 || event.code === 1008) {
         const me = await getMe();
-        if (!me || !me.paired) { showPair(); toast('電腦已取消這台手機的配對'); return; }
+        if (me && !me.paired) { connection.forget(); showPair(); toast('電腦已取消這台手機的配對'); return; }
       }
       scheduleReconnect();
     };
@@ -188,7 +218,12 @@
   function scheduleReconnect() {
     if (!paired) return;
     clearTimeout(retryTimer);
-    retryTimer = setTimeout(connect, retryDelay);
+    retryTimer = setTimeout(async () => {
+      const me=await getMe();
+      if (!paired) return;
+      if (me && !me.paired) { connection.forget(); showPair(); return; }
+      connect();
+    }, retryDelay);
     retryDelay = Math.min(retryDelay * 1.6, 16000);
   }
   function canSend() {
@@ -448,12 +483,25 @@
       const text = window.getSelection()?.toString();
       if (paired && peerOnline && text) sendClipboard(text);
     });
-    $('pairForm').addEventListener('submit', event => {
+    $('pairForm').addEventListener('submit', async event => {
       event.preventDefault();
-      const code = $('pin').value.trim().replaceAll(' ', '');
-      if (/^\d{8}$/.test(code)) claimPair(code);
-      else $('pairError').textContent = '請輸入電腦畫面上的 8 位數配對碼。';
+      const code=$('pin').value.trim().replaceAll(' ','');
+      if (!/^\d{8}$/.test(code)) { $('pairError').textContent='請輸入電腦畫面上的 8 位數配對碼。'; return; }
+      if(pairBusy||lookingUp)return;
+      window.AmosScanner.stop();
+      lookingUp=true;
+      $('pairError').textContent='正在尋找電腦；免費服務首次喚醒可能需要約一分鐘…';
+      $('pairSubmit').disabled=true;
+      try {
+        const entry=await connection.usePin(code);
+        if(entry.resumed){showRoom(entry.user);connect();}
+        else await claimPair(entry.code);
+      } catch(error){$('pairError').textContent=error.message || '無法連線，請稍後重試。';}
+      finally{lookingUp=false;$('pairSubmit').disabled=false;}
     });
+    $('scanBtn').addEventListener('click',()=>{if(!pairBusy&&!lookingUp)window.AmosScanner.start(acceptLink);});
+    $('closeScanner').addEventListener('click',()=>window.AmosScanner.stop());
+    $('reconnectBtn').addEventListener('click',()=>{if(ws){const old=ws;ws=null;old.close();}loadApp();});
     $('sendBtn').addEventListener('click', sendText);
     $('messageInput').addEventListener('keydown', event => {
       if (event.key === 'Enter' && !event.shiftKey && !event.isComposing && !/iPhone|iPad/.test(navigator.userAgent)) {
@@ -485,19 +533,19 @@
       if (!confirm('確定取消這台手機與 Windows 電腦的配對？')) return;
       clearTimeout(retryTimer); paired = false;
       if (ws) ws.close();
-      try { await fetch('/api/logout', { method: 'POST', credentials: 'same-origin' }); } catch (_) {}
-      showPair(); toast('已取消配對');
+      try { await connection.request('/api/logout', { method: 'POST' }); } catch (_) {}
+      connection.forget(); showPair(); toast('已取消配對');
     });
     document.addEventListener('visibilitychange', async () => {
       if (document.visibilityState === 'visible' && paired && (!ws || ws.readyState > WebSocket.OPEN)) {
         const me = await getMe();
-        if (me && me.paired) connect(); else showPair();
+        if (me?.paired) connect(); else if (me && !me.paired) { connection.forget(); showPair(); } else scheduleReconnect();
       }
     });
   }
   initEvents();
   loadApp();
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
 })();
